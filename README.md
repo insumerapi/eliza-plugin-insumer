@@ -53,7 +53,7 @@ CREATE_MERCHANT      → Create merchant profile (100 free credits)
 CONFIGURE_TOKENS     → Set which tokens gate discounts + tier thresholds
 ADD_CREDITS          → Top up merchant credits with USDC
 VERIFY_WALLET        → Verify token/NFT/attestation conditions (1-10 per call)
-CHECK_TRUST          → Generate wallet trust profile (up to 50 checks across 28 chains)
+CHECK_TRUST          → Generate wallet trust profile (145 base checks across 27 chains, up to 166 across 29)
 CHECK_TRUST_BATCH    → Profile up to 10 wallets in one call
 ACP_DISCOUNT         → Check discount in OpenAI/Stripe ACP format
 UCP_DISCOUNT         → Check discount in Google UCP format
@@ -133,19 +133,23 @@ Attestation ATST-A7C3E1B2D4F56789: PASS
 
 ### CHECK_TRUST
 
-Generate a structured wallet trust profile with up to 50 checks across 28 chains (stablecoins, governance tokens, NFTs, staking, institutional issuances). Optional cross-chain with Solana, XRPL, Bitcoin, Tron, Stellar, and Sui wallets.
+Generate a structured wallet trust profile: 145 base checks across 27 chains in 9 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names), up to 166 checks across 29 chains in 13 dimensions with optional Solana, XRPL, Bitcoin, and Tron wallets. Stellar and Sui wallets switch on rows inside the base dimensions. Every check is a presence check; the signed `conditionSetVersion` (currently `2026-10`) names the check list that was run.
 
 ```
 User: "What's the trust profile for 0xd8dA...?"
 Agent: [calls CHECK_TRUST → POST /v1/trust]
 
 Trust Profile TRST-B2K4F
-  stablecoins: 15/27 passed
-  governance: 4/4 passed
+  stablecoins: 15/52 passed
+  governance: 4/8 passed
   nfts: 1/3 passed
-  staking: 1/3 passed
+  staking: 1/5 passed
   institutional_stablecoins: 0/8 passed
-Overall: 21/45 checks passed
+  tokenized_treasuries: 0/16 passed
+  stablecoin_deposits: 3/39 passed
+  wrapped_bitcoin: 1/12 passed
+  names: 1/2 passed
+Overall: 26/145 checks passed
 ```
 
 ### CHECK_TRUST_BATCH
@@ -157,9 +161,9 @@ User: "Check trust for these wallets: 0xd8dA..., 0xAb58..., 0x1234..."
 Agent: [calls CHECK_TRUST_BATCH → POST /v1/trust/batch]
 
 Batch Trust: 3 profiles
-  0xd8dA...: 21/45 checks passed (TRST-B2K4F)
-  0xAb58...: 14/45 checks passed (TRST-C3L5G)
-  0x1234...: 6/45 checks passed (TRST-D4M6H)
+  0xd8dA...: 26/145 checks passed (TRST-B2K4F)
+  0xAb58...: 14/145 checks passed (TRST-C3L5G)
+  0x1234...: 6/145 checks passed (TRST-D4M6H)
 ```
 
 ### ACP_DISCOUNT

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.6 (2026-10-01)
+
+- Trust text follows the 2026-10-01 condition-set expansion, already live on `/v1/trust` and `/v1/trust/batch`: 145 base checks across 27 chains in 9 dimensions (adds tokenized_treasuries, stablecoin_deposits, wrapped_bitcoin and names), up to 166 across 29 chains in 13 with the optional Solana, XRPL, Bitcoin and Tron wallets. Stellar and Sui wallets add no dimension; their rows sit inside the base dimensions. The CHECK_TRUST action description, the extraction template, the package description and the README (including the schematic example outputs, now out of 145 with the four new dimension rows) updated; no code path changed.
+
 ## 2.3.5 (2026-09-21)
 
 - The token-configuration prompt lists all 31 EVM chains the merchant registry accepts (adds Taiko, Ronin, Viction and Arc), says Bitcoin, Tron, Stellar and Sui are not available there, and marks `decimals` as required.

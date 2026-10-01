@@ -108,7 +108,7 @@ Extract the following as a JSON object:
 - stellarWallet: Stellar address (G-prefixed, 56 chars) if mentioned
 - suiWallet: Sui address (0x + 64 hex chars) if mentioned
 
-The trust profile runs 45 base checks across 26 chains in 5 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins), and up to 50 checks across 28 chains with the optional wallets. The EVM wallet is required. Adding solanaWallet, xrplWallet, bitcoinWallet, tronWallet, stellarWallet, or suiWallet extends the profile with additional checks on those chains.
+The trust profile runs 145 base checks across 27 chains in 9 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names), and up to 166 checks across 29 chains in 13 dimensions with the optional wallets. The EVM wallet is required. Adding solanaWallet, xrplWallet, bitcoinWallet, or tronWallet switches on that chain's own dimension; stellarWallet and suiWallet let the Stellar and Sui rows inside the base dimensions evaluate.
 
 Respond with ONLY the JSON object, no explanation.`;
 
