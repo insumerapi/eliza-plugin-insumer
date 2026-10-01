@@ -1,6 +1,6 @@
 {
   "name": "@insumermodel/plugin-eliza",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "description": "ElizaOS plugin for InsumerAPI: condition-based access for autonomous agents. 10 actions: buy API key, create merchant, configure conditions, add credits, verify wallets, trust profiles (145 base checks across 27 chains in 9 dimensions, up to 166 across 29 chains in 13 with optional Solana, XRPL, Bitcoin, Tron, Stellar, Sui wallets), ACP/UCP commerce, confirm payments. ECDSA-signed results across 37 blockchains.",
   "type": "module",
   "main": "dist/index.js",
@@ -41,7 +41,7 @@
     "url": "git+https://github.com/insumerapi/eliza-plugin-insumer.git"
   },
   "peerDependencies": {
-    "@elizaos/core": "^1.7.0"
+    "@elizaos/core": "^1.7.0 || ^2.0.0"
   },
   "devDependencies": {
     "@elizaos/core": "^1.7.0",

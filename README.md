@@ -10,6 +10,8 @@ An agent can go from zero to running a condition-based commerce operation with n
 npm install @insumermodel/plugin-eliza
 ```
 
+Works with `@elizaos/core` 1.7 and later, and with 2.x. On a 2.0 pre-release (alpha or beta) build, npm does not match the peer range, so install with `npm install @insumermodel/plugin-eliza --legacy-peer-deps`.
+
 ## Configure
 
 ### 1. Get a key — no signup, no dashboard, no password

@@ -1,5 +1,6 @@
 import type {
   Action,
+  ActionResult,
   ActionExample,
   IAgentRuntime,
   Memory,
@@ -188,6 +189,6 @@ export const verifyWalletAction: Action = {
     if (callback) {
       await callback({ text: formatted });
     }
-    return { success: true, text: formatted, data: result.data as Record<string, unknown> };
+    return { success: true, text: formatted, data: result.data as ActionResult["data"] };
   },
 };

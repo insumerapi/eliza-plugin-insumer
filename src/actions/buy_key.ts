@@ -1,5 +1,6 @@
 import type {
   Action,
+  ActionResult,
   ActionExample,
   IAgentRuntime,
   Memory,
@@ -126,6 +127,6 @@ export const buyKeyAction: Action = {
     if (callback) {
       await callback({ text });
     }
-    return { success: true, text, data };
+    return { success: true, text, data: data as ActionResult["data"] };
   },
 };
