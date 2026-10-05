@@ -21,9 +21,9 @@ Extract the following as a JSON object:
   - amount: reference amount in token units as a decimal STRING (for ratio_to_amount, e.g. the transaction size the agent intends to spend), e.g. "100"
   - minFraction: required share of total supply as a decimal STRING in (0,1] (for ratio_to_supply, e.g. "0.005" for 0.5% of supply; ERC-20 tokens only)
   - decimals: do NOT include this field. The token's own decimals are always read from the chain, and a value that differs from them is rejected with a 400.
-  - currency: XRPL trust line currency code (e.g. "RLUSD", "USDC"). Required for XRPL trust line tokens.
+  - currency: XRPL trust line currency code (e.g. "RLUSD", "USDC"). Required for XRPL trust line tokens. Currency codes are case-sensitive: copy the code exactly as the user or the issuer wrote it and never change its letter case. Never use "XRP" as a currency: for XRP itself use contractAddress "native" and no currency.
   - assetCode: Stellar asset code (e.g. "USDC", "BENJI"). Required for Stellar trust line tokens.
-  - taxon: XRPL NFT taxon number (optional, for nft_ownership on XRPL only)
+  - taxon: XRPL NFT taxon, a whole number from 0 to 4294967295 (optional, for nft_ownership on XRPL only)
   - label: human-readable description
   - template: compliance template name (for eas_attestation)
   - selector: for evm_view_call (RPC EVM only), the canonical signature of a single-address-argument view function returning bool, e.g. "hasAccess(address)"
@@ -174,17 +174,21 @@ Recent messages:
 
 Extract the following as a JSON object:
 - merchantId: the merchant ID to configure tokens for (required)
-- ownToken: the merchant's own token config (or null), with:
+- ownToken: the merchant's own token config. Include this key ONLY if the user asked to set or change the merchant's own token. If the user did not mention the own token, leave the key out entirely. Never write null here. Fields:
   - symbol: token symbol (e.g. "USDC", "UNI")
-  - chainId: chain ID number
+  - chainId: chain ID number, or "solana" or "xrpl"
   - contractAddress: token contract address
   - decimals: token decimals, required (6 for USDC, 18 for most ERC-20)
-  - currency: XRPL trust line currency code (e.g. "RLUSD", "USDC") — only for XRPL tokens
+  - currency: XRPL trust line currency code (e.g. "RLUSD", "USDC"), only for XRPL tokens. Currency codes are case-sensitive: copy the code exactly as the user or the issuer wrote it and never change its letter case.
   - tiers: array of 1-4 tiers, each with:
     - name: tier name (e.g. "Bronze", "Silver", "Gold")
-    - threshold: minimum token balance for this tier
-    - discount: discount percentage (1-50)
-- partnerTokens: array of additional token configs (same structure as ownToken), default []
+    - threshold: minimum token balance for this tier (a number)
+    - discount: discount percentage, a whole number from 1 to 50 (no decimals: 7.5 is refused)
+- partnerTokens: array of partner token configs (same structure as ownToken). Include this key ONLY if the user asked to set partner tokens. If the user did not mention partner tokens, leave the key out entirely. Never write an empty array here. The array replaces the merchant's whole stored partner list, so it must hold every partner token the user wants to keep.
+- disableOwnToken: true ONLY if the user explicitly asks to remove or switch off the merchant's own token. Otherwise leave the key out.
+- clearPartnerTokens: true ONLY if the user explicitly asks to remove all partner tokens. Otherwise leave the key out.
+
+Do not add an "enabled" field to any token.
 
 Onboarding chain IDs (all 31 EVM chains + Solana + XRPL; Bitcoin, Tron, Stellar and Sui are not available for token config):
   Ethereum = 1, BNB Chain = 56, Base = 8453, Avalanche = 43114,
@@ -240,15 +244,11 @@ Extract the following as a JSON object:
 - wallet: EVM address (0x...) if present
 - solanaWallet: Solana address (base58) if present
 - xrplWallet: XRPL address (r...) if present
-- bitcoinWallet: Bitcoin address (1..., 3..., bc1q..., or bc1p...) if present
-- tronWallet: Tron address (T-prefixed base58) if present
-- stellarWallet: Stellar address (G-prefixed) if present
-- suiWallet: Sui address (0x + 64 hex chars) if present
 - items: optional array of line items, each with:
   - path: JSONPath reference (e.g. "$.line_items[0]")
   - amount: item price in cents
 
-At least one wallet address is required.
+At least one wallet address is required. Merchant discounts read EVM, Solana and XRPL wallets only: do not output any other wallet field.
 
 Respond with ONLY the JSON object, no explanation.`;
 
@@ -262,15 +262,11 @@ Extract the following as a JSON object:
 - wallet: EVM address (0x...) if present
 - solanaWallet: Solana address (base58) if present
 - xrplWallet: XRPL address (r...) if present
-- bitcoinWallet: Bitcoin address (1..., 3..., bc1q..., or bc1p...) if present
-- tronWallet: Tron address (T-prefixed base58) if present
-- stellarWallet: Stellar address (G-prefixed) if present
-- suiWallet: Sui address (0x + 64 hex chars) if present
 - items: optional array of line items, each with:
   - path: JSONPath reference (e.g. "$.line_items[0]")
   - amount: item price in cents
 
-At least one wallet address is required.
+At least one wallet address is required. Merchant discounts read EVM, Solana and XRPL wallets only: do not output any other wallet field.
 
 Respond with ONLY the JSON object, no explanation.`;
 

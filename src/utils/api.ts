@@ -5,7 +5,13 @@ const API_BASE = "https://api.insumermodel.com/v1";
 export interface ApiResponse {
   ok: boolean;
   data?: Record<string, unknown>;
-  error?: { code: number; message: string };
+  // code is the HTTP status as a number for most errors, and the string "rpc_failure" on a 503
+  // where a read did not complete. failedConditions is present on rpc_failure only.
+  error?: {
+    code: number | string;
+    message: string;
+    failedConditions?: Array<{ source?: string; chainId?: number | string | null; message?: string }>;
+  };
   meta?: { version: string; timestamp: string };
 }
 
@@ -104,6 +110,25 @@ export async function publicApiCall(
   return res.json() as Promise<ApiResponse>;
 }
 
+// --- Error passthrough ---
+
+/**
+ * What an action returns in `data` when the API answers ok: false, so a caller can tell a
+ * retryable read failure (code "rpc_failure") from a request it has to change (a 400).
+ * rpc_failure is never a verdict about the wallet.
+ */
+export function errorData(result: ApiResponse): Record<string, unknown> {
+  const err = result.error;
+  const out: Record<string, unknown> = {
+    code: err?.code ?? null,
+    retryable: err?.code === "rpc_failure",
+  };
+  if (Array.isArray(err?.failedConditions)) {
+    out.failedConditions = err.failedConditions;
+  }
+  return out;
+}
+
 // --- Response formatters ---
 
 interface AttestResult {
@@ -120,9 +145,12 @@ interface AttestResult {
 }
 
 interface TrustDimension {
-  checks: Array<{ label: string; met: boolean }>;
+  // A check on a chain whose wallet was not supplied carries evaluated: false and the name of
+  // the wallet parameter it needs. It was not run, so it is neither a pass nor a fail.
+  checks: Array<{ label: string; met: boolean; evaluated?: boolean; requires?: string }>;
   passCount: number;
   failCount: number;
+  notEvaluatedCount?: number;
   total: number;
 }
 
@@ -167,29 +195,43 @@ export function formatAttestResult(data: Record<string, unknown>): string {
 /**
  * Format a trust API response for display.
  * API shape: data = { trust: { id, dimensions, summary, ... }, sig, kid }
+ *
+ * One line per dimension. A profile runs 145 to 166 checks, so the checks themselves are not
+ * listed: they are in the action's `data`. Checks that were not evaluated (their wallet was
+ * not supplied) are counted on their own and never shown as failed.
  */
 export function formatTrustResult(data: Record<string, unknown>): string {
   const trust = data.trust as Record<string, unknown> | undefined;
   const id = trust?.id as string;
   const dimensions = trust?.dimensions as Record<string, TrustDimension> | undefined;
   const summary = trust?.summary as Record<string, unknown> | undefined;
-  const lines: string[] = [`Trust Profile ${id}`, ""];
+  const lines: string[] = [`Trust Profile ${id}`];
+  const needed = new Set<string>();
+  let notEvaluatedTotal = 0;
   if (dimensions) {
     for (const [name, dim] of Object.entries(dimensions)) {
-      lines.push(
-        `  ${name}: ${dim.passCount}/${dim.total} passed`
-      );
-      for (const check of dim.checks) {
-        const icon = check.met ? "+" : "-";
-        lines.push(`    [${icon}] ${check.label}`);
+      const checks = Array.isArray(dim.checks) ? dim.checks : [];
+      const skipped = checks.filter((c) => c.evaluated === false);
+      for (const c of skipped) {
+        if (c.requires) needed.add(c.requires);
       }
+      const notEvaluated =
+        typeof dim.notEvaluatedCount === "number" ? dim.notEvaluatedCount : skipped.length;
+      notEvaluatedTotal += notEvaluated;
+      const tail = notEvaluated > 0 ? `, ${notEvaluated} not evaluated` : "";
+      lines.push(`  ${name}: ${dim.passCount}/${dim.total} passed${tail}`);
     }
   }
   if (summary) {
-    lines.push(
-      "",
-      `Overall: ${summary.totalPassed}/${summary.totalChecks} checks passed`
-    );
+    const totalNotEvaluated =
+      typeof summary.totalNotEvaluated === "number" ? summary.totalNotEvaluated : notEvaluatedTotal;
+    lines.push(`Overall: ${summary.totalPassed}/${summary.totalChecks} checks passed`);
+    if (totalNotEvaluated > 0) {
+      const how = needed.size > 0 ? ` Supply ${[...needed].sort().join(", ")} to run them.` : "";
+      lines.push(
+        `${totalNotEvaluated} of ${summary.totalChecks} checks were not evaluated: no wallet was supplied for their chain.${how}`
+      );
+    }
   }
   return lines.join("\n");
 }

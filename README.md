@@ -97,6 +97,8 @@ Credits: 100 (free starter credits)
 
 Configure which tokens gate access to merchant discounts. Up to 8 tokens with 1-4 discount tiers each. Supports EVM chains (Ethereum, Base, Polygon, Arbitrum, Optimism, and more) plus Solana and XRPL.
 
+Only the tokens you name are sent. An own token you do not mention is left as stored. A partner list, when you give one, replaces the stored partner list, so name every partner token you want to keep. The own token is switched off, or the partner list emptied, only when you ask for that in so many words. Tier discounts are whole numbers from 1 to 50. An XRPL currency code is sent exactly as you wrote it: codes are case-sensitive.
+
 ```
 User: "Set up USDC gating for acme-coffee: Bronze at 100 (5%), Silver at 1000 (10%), Gold at 10000 (15%) on Ethereum."
 Agent: [calls CONFIGURE_TOKENS → PUT /v1/merchants/{id}/tokens]
@@ -146,13 +148,16 @@ Trust Profile TRST-B2K4F
   governance: 4/8 passed
   nfts: 1/3 passed
   staking: 1/5 passed
-  institutional_stablecoins: 0/8 passed
-  tokenized_treasuries: 0/16 passed
+  institutional_stablecoins: 0/8 passed, 6 not evaluated
+  tokenized_treasuries: 0/16 passed, 1 not evaluated
   stablecoin_deposits: 3/39 passed
   wrapped_bitcoin: 1/12 passed
   names: 1/2 passed
 Overall: 26/145 checks passed
+7 of 145 checks were not evaluated: no wallet was supplied for their chain. Supply solanaWallet, stellarWallet, suiWallet, xrplWallet to run them.
 ```
+
+The reply is one line per dimension. The individual checks are in the action result's `data`. A check whose chain needs a wallet that was not supplied is counted as not evaluated, never as failed.
 
 ### CHECK_TRUST_BATCH
 
@@ -234,7 +239,11 @@ Automatically detects wallet addresses (EVM, Solana, XRPL, Bitcoin, Tron, Stella
 
 ## Handling `rpc_failure` Errors
 
-If the API cannot reach one or more data sources after retries, actions return `ok: false` with error code `rpc_failure`. No signature, no JWT, no credits charged. This is a retryable error — the agent should retry after 2-5 seconds.
+If the API cannot read one or more data sources after retries, it answers with HTTP 503 and error code `rpc_failure`. VERIFY_WALLET, CHECK_TRUST, ACP_DISCOUNT and UCP_DISCOUNT can all meet it. The action then returns `success: false`, the API's message as `text`, and `data: { code: "rpc_failure", retryable: true, failedConditions: [...] }`. No signature, no JWT, no discount code, no credits charged. This is a retryable error: the agent should retry after 2-5 seconds.
+
+Every other API error is returned the same way, with the API's numeric status as `data.code` (for example `400`) and `retryable: false`. A 400 names what to change in the request.
+
+CHECK_TRUST_BATCH is the exception: one wallet that could not be read does not fail the batch. That wallet's line reads `ERROR` with a message that starts `rpc_failure:`, and the other profiles are returned. Retry that wallet alone.
 
 **Important:** `rpc_failure` is NOT a verification failure. Do not treat it as `pass: false`. It means the data source was temporarily unavailable and the API refused to sign an unverified result.
 

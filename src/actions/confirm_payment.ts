@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall } from "../utils/api.js";
+import { apiCall, errorData } from "../utils/api.js";
 import { confirmPaymentTemplate } from "../utils/templates.js";
 
 interface ConfirmPaymentParams {
@@ -99,7 +99,7 @@ export const confirmPaymentAction: Action = {
       if (callback) {
         await callback({ text: `Payment confirmation failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const data = result.data as Record<string, unknown>;

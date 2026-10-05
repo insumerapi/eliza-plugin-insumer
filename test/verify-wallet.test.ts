@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { formatAttestResult, formatTrustResult, formatBatchResult } from "../src/utils/api.js";
+import { formatAttestResult, formatTrustResult, formatBatchResult, errorData } from "../src/utils/api.js";
+import { buildTokensBody } from "../src/actions/configure_tokens.js";
 import type { AttestParams } from "../src/utils/api.js";
 
 // --- formatAttestResult tests ---
@@ -92,9 +93,97 @@ describe("formatTrustResult", () => {
     const result = formatTrustResult(data);
     expect(result).toContain("Trust Profile TRST-12345");
     expect(result).toContain("financial: 1/2 passed");
-    expect(result).toContain("[+] USDC balance");
-    expect(result).toContain("[-] ETH balance");
     expect(result).toContain("Overall: 1/2 checks passed");
+    // One line per dimension: the checks themselves are not listed.
+    expect(result).not.toContain("USDC balance");
+    expect(result).not.toContain("not evaluated");
+  });
+
+  it("counts checks that were not evaluated on their own, never as failed", () => {
+    const data = {
+      trust: {
+        id: "TRST-67890",
+        wallet: "0xabc",
+        conditionSetVersion: "2026-10",
+        dimensions: {
+          institutional_stablecoins: {
+            checks: [
+              { label: "USDC on Ethereum", met: true },
+              { label: "USDC on Stellar", met: false, evaluated: false, reason: "wallet_not_provided", requires: "stellarWallet" },
+              { label: "USDC on Sui", met: false, evaluated: false, reason: "wallet_not_provided", requires: "suiWallet" },
+            ],
+            passCount: 1,
+            failCount: 0,
+            notEvaluatedCount: 2,
+            total: 3,
+          },
+        },
+        summary: { totalChecks: 3, totalPassed: 1, totalFailed: 0, totalNotEvaluated: 2 },
+      },
+      sig: "base64sig...",
+      kid: "insumer-trust-v2",
+    };
+
+    const result = formatTrustResult(data);
+    expect(result).toContain("institutional_stablecoins: 1/3 passed, 2 not evaluated");
+    expect(result).toContain("Overall: 1/3 checks passed");
+    expect(result).toContain("2 of 3 checks were not evaluated");
+    expect(result).toContain("Supply stellarWallet, suiWallet to run them.");
+    expect(result).not.toContain("[-]");
+  });
+});
+
+// --- errorData tests ---
+
+describe("errorData", () => {
+  it("carries rpc_failure and failedConditions, marked retryable", () => {
+    const out = errorData({
+      ok: false,
+      error: {
+        code: "rpc_failure",
+        message: "Unable to verify all conditions",
+        failedConditions: [{ source: "balance_read", chainId: 1, message: "Timeout" }],
+      },
+    });
+    expect(out.code).toBe("rpc_failure");
+    expect(out.retryable).toBe(true);
+    expect(out.failedConditions).toEqual([{ source: "balance_read", chainId: 1, message: "Timeout" }]);
+  });
+
+  it("carries a 400 as not retryable", () => {
+    const out = errorData({ ok: false, error: { code: 400, message: "currency is required" } });
+    expect(out.code).toBe(400);
+    expect(out.retryable).toBe(false);
+    expect(out.failedConditions).toBeUndefined();
+  });
+});
+
+// --- buildTokensBody tests ---
+
+describe("buildTokensBody", () => {
+  const token = {
+    symbol: "RLUSD",
+    chainId: "xrpl" as const,
+    contractAddress: "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+    decimals: 6,
+    currency: "RLUSD",
+    tiers: [{ name: "Gold", threshold: 100, discount: 10 }],
+  };
+
+  it("drops a null own token and an empty partner list the user did not ask for", () => {
+    expect(buildTokensBody({ merchantId: "m", ownToken: null, partnerTokens: [token] })).toEqual({ partnerTokens: [token] });
+    expect(buildTokensBody({ merchantId: "m", ownToken: token, partnerTokens: [] })).toEqual({ ownToken: token });
+    expect(buildTokensBody({ merchantId: "m", ownToken: null, partnerTokens: [] })).toEqual({});
+  });
+
+  it("sends a removal only when it was asked for", () => {
+    expect(buildTokensBody({ merchantId: "m", disableOwnToken: true })).toEqual({ ownToken: null });
+    expect(buildTokensBody({ merchantId: "m", clearPartnerTokens: true })).toEqual({ partnerTokens: [] });
+  });
+
+  it("leaves the currency code exactly as given", () => {
+    const body = buildTokensBody({ merchantId: "m", ownToken: { ...token, currency: "rlUSD" } });
+    expect((body.ownToken as { currency: string }).currency).toBe("rlUSD");
   });
 });
 

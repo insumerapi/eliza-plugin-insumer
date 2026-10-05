@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.8 (2026-10-05)
+
+- CONFIGURE_TOKENS no longer sends `ownToken: null` or `partnerTokens: []` unless the user asked for the removal. Before, a request that named only partner tokens could switch the merchant's own token off, and a request that named only the own token could empty the partner list. A key the user did not mention is now left out of the request, and the prompt says so. If nothing is left to send, the action asks what to configure and makes no call.
+- A failed action now returns `data: { code, retryable, failedConditions }` beside the message, so a caller can tell a retryable `rpc_failure` (HTTP 503) from a 400 without reading the sentence. The README section on `rpc_failure` describes what is returned, names ACP_DISCOUNT and UCP_DISCOUNT among the actions that can meet it, and explains the per-wallet error entries of CHECK_TRUST_BATCH.
+- CHECK_TRUST replies with one line per dimension instead of one line per check (a profile is 145 to 166 checks). Checks whose wallet was not supplied are counted as not evaluated and are no longer shown as failed.
+- Prompts: an XRPL `currency` code is case-sensitive and is copied exactly as written; `XRP` is not a trust line currency; tier discounts are whole numbers from 1 to 50; `taxon` is a whole number from 0 to 4294967295.
+- ACP_DISCOUNT and UCP_DISCOUNT no longer offer Bitcoin, Tron, Stellar or Sui wallets. Merchant discounts read EVM, Solana and XRPL wallets only.
+
 ## 2.3.7 (2026-10-01)
 
 - elizaOS 2.x: the peer range is now `^1.7.0 || ^2.0.0`, so the plugin installs beside a 2.x core instead of failing npm's peer check. On a 2.0 pre-release build, install with `--legacy-peer-deps`; the README says so.

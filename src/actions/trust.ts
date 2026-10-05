@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall, formatTrustResult } from "../utils/api.js";
+import { apiCall, formatTrustResult, errorData } from "../utils/api.js";
 import type { TrustParams } from "../utils/api.js";
 import { trustTemplate } from "../utils/templates.js";
 
@@ -112,7 +112,7 @@ export const checkTrustAction: Action = {
       if (callback) {
         await callback({ text: `Trust profile failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const formatted = formatTrustResult(result.data!);

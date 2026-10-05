@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall, formatBatchResult } from "../utils/api.js";
+import { apiCall, formatBatchResult, errorData } from "../utils/api.js";
 import type { BatchTrustParams } from "../utils/api.js";
 import { batchTrustTemplate } from "../utils/templates.js";
 
@@ -99,7 +99,7 @@ export const checkTrustBatchAction: Action = {
       if (callback) {
         await callback({ text: `Batch trust check failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const formatted = formatBatchResult(result.data!);

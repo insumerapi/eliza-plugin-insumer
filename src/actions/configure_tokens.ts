@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall } from "../utils/api.js";
+import { apiCall, errorData } from "../utils/api.js";
 import { configureTokensTemplate } from "../utils/templates.js";
 
 interface TokenTier {
@@ -18,7 +18,7 @@ interface TokenTier {
 
 interface TokenConfig {
   symbol: string;
-  chainId: number;
+  chainId: number | "solana" | "xrpl";
   contractAddress: string;
   decimals: number;
   currency?: string;
@@ -29,12 +29,37 @@ interface ConfigureTokensParams {
   merchantId: string;
   ownToken?: TokenConfig | null;
   partnerTokens?: TokenConfig[];
+  disableOwnToken?: boolean;
+  clearPartnerTokens?: boolean;
+}
+
+/**
+ * Build the PUT body from what the model extracted. The API changes only the keys it is sent:
+ * `ownToken: null` switches the merchant's own token off, and `partnerTokens: []` replaces the
+ * stored partner list with nothing. So a key is sent only when it carries a real token config,
+ * or when the user explicitly asked for the removal. A null or an empty list the model filled
+ * in by default is never forwarded.
+ */
+export function buildTokensBody(params: ConfigureTokensParams): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  const own = params.ownToken;
+  if (own && typeof own === "object" && !Array.isArray(own)) {
+    body.ownToken = own;
+  } else if (params.disableOwnToken === true) {
+    body.ownToken = null;
+  }
+  if (Array.isArray(params.partnerTokens) && params.partnerTokens.length > 0) {
+    body.partnerTokens = params.partnerTokens;
+  } else if (params.clearPartnerTokens === true) {
+    body.partnerTokens = [];
+  }
+  return body;
 }
 
 export const configureTokensAction: Action = {
   name: "CONFIGURE_TOKENS",
   description:
-    "Configure which tokens gate access to merchant discounts and set tier thresholds. Supports own token + up to 7 partner tokens with 1-4 discount tiers each. EVM chains + Solana + XRPL supported.",
+    "Configure which tokens gate access to merchant discounts and set tier thresholds. Supports own token + up to 7 partner tokens with 1-4 discount tiers each (whole-number discounts from 1 to 50). EVM chains + Solana + XRPL supported. Only the tokens the user names are sent: an own token that is not mentioned is left as stored, and a partner list, when given, replaces the stored partner list.",
   similes: [
     "SET_TOKEN_TIERS",
     "CONFIGURE_TOKEN_GATING",
@@ -107,15 +132,24 @@ export const configureTokensAction: Action = {
       return { success: false, text: "No merchant ID provided" };
     }
 
-    const { merchantId, ...body } = params;
-    const result = await apiCall(apiKey, "PUT", `/merchants/${merchantId}/tokens`, body as unknown as Record<string, unknown>);
+    const merchantId = params.merchantId;
+    const body = buildTokensBody(params);
+    if (Object.keys(body).length === 0) {
+      if (callback) {
+        await callback({
+          text: "Please say which token to configure (the merchant's own token or partner tokens) with its chain, contract address, decimals and discount tiers. Nothing was changed.",
+        });
+      }
+      return { success: false, text: "No token configuration provided" };
+    }
+    const result = await apiCall(apiKey, "PUT", `/merchants/${merchantId}/tokens`, body);
 
     if (!result.ok) {
       const errMsg = result.error?.message || "Unknown API error";
       if (callback) {
         await callback({ text: `Token configuration failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const data = result.data as Record<string, unknown>;

@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall, formatAttestResult } from "../utils/api.js";
+import { apiCall, formatAttestResult, errorData } from "../utils/api.js";
 import type { AttestParams } from "../utils/api.js";
 import { verifyTemplate } from "../utils/templates.js";
 
@@ -182,7 +182,7 @@ export const verifyWalletAction: Action = {
       if (callback) {
         await callback({ text: `Verification failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const formatted = formatAttestResult(result.data!);

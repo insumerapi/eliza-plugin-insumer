@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall } from "../utils/api.js";
+import { apiCall, errorData } from "../utils/api.js";
 import { ucpDiscountTemplate } from "../utils/templates.js";
 
 interface UcpDiscountParams {
@@ -15,10 +15,6 @@ interface UcpDiscountParams {
   wallet?: string;
   solanaWallet?: string;
   xrplWallet?: string;
-  bitcoinWallet?: string;
-  tronWallet?: string;
-  stellarWallet?: string;
-  suiWallet?: string;
   items?: Array<{ path: string; amount: number }>;
 }
 
@@ -99,14 +95,10 @@ export const ucpDiscountAction: Action = {
     if (
       !params.wallet &&
       !params.solanaWallet &&
-      !params.xrplWallet &&
-      !params.bitcoinWallet &&
-      !params.tronWallet &&
-      !params.stellarWallet &&
-      !params.suiWallet
+      !params.xrplWallet
     ) {
       if (callback) {
-        await callback({ text: "Please provide a wallet address to check discount eligibility." });
+        await callback({ text: "Please provide an EVM, Solana or XRPL wallet address to check discount eligibility." });
       }
       return { success: false, text: "No wallet address provided" };
     }
@@ -118,7 +110,7 @@ export const ucpDiscountAction: Action = {
       if (callback) {
         await callback({ text: `UCP discount check failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const data = result.data as Record<string, unknown>;

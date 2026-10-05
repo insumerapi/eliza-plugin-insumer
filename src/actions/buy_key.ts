@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { publicApiCall } from "../utils/api.js";
+import { publicApiCall, errorData } from "../utils/api.js";
 import { buyKeyTemplate } from "../utils/templates.js";
 
 interface BuyKeyParams {
@@ -108,7 +108,7 @@ export const buyKeyAction: Action = {
       if (callback) {
         await callback({ text: `Key purchase failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const data = result.data as Record<string, unknown>;

@@ -7,7 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall } from "../utils/api.js";
+import { apiCall, errorData } from "../utils/api.js";
 import { createMerchantTemplate } from "../utils/templates.js";
 
 interface CreateMerchantParams {
@@ -101,7 +101,7 @@ export const createMerchantAction: Action = {
       if (callback) {
         await callback({ text: `Merchant creation failed: ${errMsg}` });
       }
-      return { success: false, text: errMsg };
+      return { success: false, text: errMsg, data: errorData(result) as ActionResult["data"] };
     }
 
     const data = result.data as Record<string, unknown>;
