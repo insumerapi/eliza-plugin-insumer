@@ -19,7 +19,7 @@ interface CreateMerchantParams {
 export const createMerchantAction: Action = {
   name: "CREATE_MERCHANT",
   description:
-    "Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Receives 100 free verification credits. Max 10 merchants per API key.",
+    "Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Discount codes draw on the credits of the API key that owns it. Max 10 merchants per API key.",
   similes: [
     "NEW_MERCHANT",
     "SETUP_MERCHANT",
@@ -110,7 +110,7 @@ export const createMerchantAction: Action = {
       ``,
       `ID: ${data.id}`,
       `Name: ${data.companyName}`,
-      `Credits: ${data.credits} (free starter credits)`,
+      `Credits: ${data.credits} (the owner key's balance)`,
       ``,
       `Next steps: configure token tiers with CONFIGURE_TOKENS, then add credits with ADD_CREDITS.`,
     ].join("\n");

@@ -14,7 +14,7 @@ import { trustTemplate } from "../utils/templates.js";
 export const checkTrustAction: Action = {
   name: "CHECK_TRUST",
   description:
-    "Generate an ECDSA-signed wallet trust profile: 145 base checks across 27 chains in 9 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names), up to 166 checks across 29 chains in 13 dimensions with optional Solana, XRPL, Bitcoin, and Tron wallets. Every check is a presence check. Returns per-dimension pass/fail counts, no scores, no opinions, just cryptographically verifiable evidence. Stellar and Sui wallets switch on rows inside the base dimensions. Costs 3 credits.",
+    "Generate an ECDSA-signed wallet trust profile: 155 base checks across 27 chains in 10 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names, account), up to 176 checks across 29 chains in 14 dimensions with optional Solana, XRPL, Bitcoin, and Tron wallets. Every check is a presence check; the account dimension reports whether contract code or an EIP-7702 delegation is present at the address on Ethereum, Base, Arbitrum, Optimism and Polygon. Returns per-dimension pass/fail counts, no scores, no opinions, just cryptographically verifiable evidence. Stellar and Sui wallets switch on rows inside the base dimensions. Costs 3 credits.",
   similes: [
     "TRUST_PROFILE",
     "WALLET_TRUST",

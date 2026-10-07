@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { formatAttestResult, formatTrustResult, formatBatchResult, errorData } from "../src/utils/api.js";
+import { formatAttestResult, formatTrustResult, formatBatchResult, errorData, orderDimensions } from "../src/utils/api.js";
 import { buildTokensBody } from "../src/actions/configure_tokens.js";
 import type { AttestParams } from "../src/utils/api.js";
 
@@ -104,7 +104,7 @@ describe("formatTrustResult", () => {
       trust: {
         id: "TRST-67890",
         wallet: "0xabc",
-        conditionSetVersion: "2026-10",
+        conditionSetVersion: "2026-10-08",
         dimensions: {
           institutional_stablecoins: {
             checks: [
@@ -117,8 +117,28 @@ describe("formatTrustResult", () => {
             notEvaluatedCount: 2,
             total: 3,
           },
+          account: {
+            checks: [
+              {
+                label: "Contract code on Ethereum",
+                chainId: 1,
+                met: true,
+                evaluatedCondition: { type: "account_code", chainId: 1, expect: "contract", operator: "code_state" },
+              },
+              {
+                label: "EIP-7702 delegation on Ethereum",
+                chainId: 1,
+                met: false,
+                evaluatedCondition: { type: "account_code", chainId: 1, expect: "eip7702", operator: "code_state" },
+              },
+            ],
+            passCount: 1,
+            failCount: 1,
+            notEvaluatedCount: 0,
+            total: 2,
+          },
         },
-        summary: { totalChecks: 3, totalPassed: 1, totalFailed: 0, totalNotEvaluated: 2 },
+        summary: { totalChecks: 5, totalPassed: 2, totalFailed: 1, totalNotEvaluated: 2 },
       },
       sig: "base64sig...",
       kid: "insumer-trust-v2",
@@ -126,10 +146,69 @@ describe("formatTrustResult", () => {
 
     const result = formatTrustResult(data);
     expect(result).toContain("institutional_stablecoins: 1/3 passed, 2 not evaluated");
-    expect(result).toContain("Overall: 1/3 checks passed");
-    expect(result).toContain("2 of 3 checks were not evaluated");
+    expect(result).toContain("account: 1/2 passed");
+    expect(result).not.toContain("account: 1/2 passed,");
+    expect(result).toContain("Overall: 2/5 checks passed");
+    expect(result).toContain("2 of 5 checks were not evaluated");
     expect(result).toContain("Supply stellarWallet, suiWallet to run them.");
     expect(result).not.toContain("[-]");
+  });
+
+  it("prints dimensions in the fixed order whatever order the object arrived in", () => {
+    const dim = { checks: [], passCount: 0, failCount: 0, total: 1 };
+    const data = {
+      trust: {
+        id: "TRST-ORDER",
+        wallet: "0xabc",
+        conditionSetVersion: "2026-10-08",
+        dimensions: {
+          zeta_future: dim,
+          tron: dim,
+          account: dim,
+          solana: dim,
+          names: dim,
+          alpha_future: dim,
+          stablecoins: dim,
+          xrpl: dim,
+          wrapped_bitcoin: dim,
+          governance: dim,
+          bitcoin: dim,
+          stablecoin_deposits: dim,
+          nfts: dim,
+          tokenized_treasuries: dim,
+          staking: dim,
+          institutional_stablecoins: dim,
+        },
+        summary: { totalChecks: 16, totalPassed: 0, totalFailed: 16 },
+      },
+      sig: "base64sig...",
+      kid: "insumer-trust-v2",
+    };
+
+    const names = formatTrustResult(data)
+      .split("\n")
+      .filter((l) => l.startsWith("  "))
+      .map((l) => l.trim().split(":")[0]);
+    expect(names).toEqual([
+      "stablecoins",
+      "governance",
+      "nfts",
+      "staking",
+      "institutional_stablecoins",
+      "tokenized_treasuries",
+      "stablecoin_deposits",
+      "wrapped_bitcoin",
+      "names",
+      "account",
+      "solana",
+      "xrpl",
+      "bitcoin",
+      "tron",
+      "alpha_future",
+      "zeta_future",
+    ]);
+    // A base-only profile prints the ten base dimensions and nothing else.
+    expect(orderDimensions({ account: 1, stablecoins: 2 }).map(([n]) => n)).toEqual(["stablecoins", "account"]);
   });
 });
 
@@ -237,6 +316,20 @@ describe("AttestParams", () => {
       conditions: [{ type: "token_balance", contractAddress: "0x...", chainId: 1, threshold: 1 }],
     };
     expect(params.format).toBeUndefined();
+  });
+
+  it("accepts an account_code condition with expect and delegate", () => {
+    const params: AttestParams = {
+      wallet: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      conditions: [
+        { type: "account_code", chainId: 8453, expect: "eip7702" },
+        { type: "account_code", chainId: 1, expect: "eip7702", delegate: "0x1234567890abcdef1234567890abcdef12345678" },
+        { type: "account_code", chainId: 10, expect: "none" },
+      ],
+    };
+    expect(params.conditions[0].expect).toBe("eip7702");
+    expect(params.conditions[1].delegate).toBeDefined();
+    expect(params.conditions[2].expect).toBe("none");
   });
 });
 

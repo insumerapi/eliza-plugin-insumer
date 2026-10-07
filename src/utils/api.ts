@@ -16,8 +16,17 @@ export interface ApiResponse {
 }
 
 export interface AttestCondition {
-  type: "token_balance" | "nft_ownership" | "eas_attestation" | "farcaster_id" | "evm_view_call" | "ratio_to_amount" | "ratio_to_supply" | "erc8004_agent" | "erc7710_delegation";
+  type: "token_balance" | "nft_ownership" | "eas_attestation" | "farcaster_id" | "evm_view_call" | "ratio_to_amount" | "ratio_to_supply" | "erc8004_agent" | "erc7710_delegation" | "account_code";
   contractAddress?: string;
+  // account_code (EVM chainId only): the code state the wallet address itself must be in at the
+  // anchored block. "none" = no code (a plain key account); "eip7702" = the EIP-7702 delegation
+  // designator (a key that has delegated execution to a contract); "contract" = any other code
+  // (a smart-contract wallet, a protocol, a token). Required for account_code. The result is the
+  // boolean met; the code and the delegation target are never returned.
+  expect?: "none" | "eip7702" | "contract";
+  // account_code with expect "eip7702" only (a 400 with any other expect): an EVM address; met
+  // iff the designator points at it. Echoed, lowercase, inside the signed evaluatedCondition.
+  delegate?: string;
   chainId?: number | "solana" | "xrpl" | "bitcoin" | "tron" | "stellar" | "sui";
   // token_balance threshold is sent as a decimal string (v2 keys require it; v1 keys
   // accept either). A number is coerced to a string before the request is sent.
@@ -196,10 +205,42 @@ export function formatAttestResult(data: Record<string, unknown>): string {
  * Format a trust API response for display.
  * API shape: data = { trust: { id, dimensions, summary, ... }, sig, kid }
  *
- * One line per dimension. A profile runs 145 to 166 checks, so the checks themselves are not
+ * One line per dimension. A profile runs 155 to 176 checks, so the checks themselves are not
  * listed: they are in the action's `data`. Checks that were not evaluated (their wallet was
  * not supplied) are counted on their own and never shown as failed.
+ *
+ * Dimensions print in a fixed order: the base dimensions, then the per-wallet dimensions that
+ * were switched on, then any other dimension alphabetically.
  */
+const DIMENSION_ORDER = [
+  "stablecoins",
+  "governance",
+  "nfts",
+  "staking",
+  "institutional_stablecoins",
+  "tokenized_treasuries",
+  "stablecoin_deposits",
+  "wrapped_bitcoin",
+  "names",
+  "account",
+  "solana",
+  "xrpl",
+  "bitcoin",
+  "tron",
+];
+
+export function orderDimensions<T>(dimensions: Record<string, T>): Array<[string, T]> {
+  const rank = new Map(DIMENSION_ORDER.map((name, i) => [name, i]));
+  return Object.entries(dimensions).sort(([a], [b]) => {
+    const ra = rank.get(a);
+    const rb = rank.get(b);
+    if (ra !== undefined && rb !== undefined) return ra - rb;
+    if (ra !== undefined) return -1;
+    if (rb !== undefined) return 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+}
+
 export function formatTrustResult(data: Record<string, unknown>): string {
   const trust = data.trust as Record<string, unknown> | undefined;
   const id = trust?.id as string;
@@ -209,7 +250,7 @@ export function formatTrustResult(data: Record<string, unknown>): string {
   const needed = new Set<string>();
   let notEvaluatedTotal = 0;
   if (dimensions) {
-    for (const [name, dim] of Object.entries(dimensions)) {
+    for (const [name, dim] of orderDimensions(dimensions)) {
       const checks = Array.isArray(dim.checks) ? dim.checks : [];
       const skipped = checks.filter((c) => c.evaluated === false);
       for (const c of skipped) {

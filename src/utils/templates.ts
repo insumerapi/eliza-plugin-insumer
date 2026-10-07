@@ -13,7 +13,7 @@ Extract the following as a JSON object:
 - suiWallet: Sui address (0x + 64 hex chars) if present
 - format: "jwt" if the user asks for a JWT token, bearer token, Wallet Auth token, or JWT format. Omit otherwise.
 - conditions: array of conditions to check, each with:
-  - type: "token_balance", "nft_ownership", "eas_attestation", "farcaster_id", "evm_view_call", "ratio_to_amount", "ratio_to_supply", "erc8004_agent", or "erc7710_delegation"
+  - type: "token_balance", "nft_ownership", "eas_attestation", "farcaster_id", "evm_view_call", "ratio_to_amount", "ratio_to_supply", "erc8004_agent", "erc7710_delegation", or "account_code"
   - contractAddress: token/NFT contract address (use the reference table below). "native" means the chain's native coin and is for token_balance and ratio_to_amount only. nft_ownership needs the NFT contract address (0x + 40 hex on EVM); "native" with nft_ownership is rejected with a 400. On Sui, use a coin type address::module::Name ("0x2::sui::SUI" for native SUI); "native" is not accepted on Sui.
   - chainId: chain ID number or "solana", "xrpl", "bitcoin", "tron", "stellar", or "sui" (ratio_to_amount and ratio_to_supply support EVM chain IDs only)
   - threshold: minimum balance for token_balance, as a decimal STRING in token units (e.g. "1000", not 1000) to preserve full precision
@@ -29,6 +29,8 @@ Extract the following as a JSON object:
   - selector: for evm_view_call (RPC EVM only), the canonical signature of a single-address-argument view function returning bool, e.g. "hasAccess(address)"
   - agentId: for erc8004_agent (Base, chainId 8453), the ERC-8004 agent ID as a uint256 decimal string; met iff the wallet owns the agent NFT or is the registry agentWallet binding (registration is permissionless minting; no vetting implied)
   - delegationManager, expectedDelegator, delegation: for erc7710_delegation (Base, chainId 8453, max 3 per call). delegation = {delegator, delegate, authority, caveats, salt, signature}; met iff the wallet is the delegate, the delegator matches expectedDelegator, the EIP-712 signature verifies (EOA or ERC-1271), unrevoked at the anchored block, all caveat enforcers recognized, and time windows are satisfied. Spend/target/call limits are reported as declaredLimits, not simulated; these attestations expire in 5 minutes.
+  - expect: for account_code (EVM chainId only; no contractAddress), the code state the wallet address itself must be in at the anchored block, required: "none" (no code, a plain key account), "eip7702" (the EIP-7702 delegation designator, a key that has delegated execution to a contract), or "contract" (any other code: a smart-contract wallet, a protocol, a token). Exclusive on a chain. The result is the boolean met; the code and the delegation target are never returned.
+  - delegate: for account_code with expect "eip7702" only (a 400 with any other expect), an EVM address; met iff the designator points at it.
 
 Note: nft_ownership is supported on 33 of the 37 chains (31 EVM + Solana + XRPL); Bitcoin, Tron, Stellar and Sui are token_balance only.
 
@@ -91,6 +93,7 @@ If the user says "verify KYC", use template "coinbase_verified_account".
 If the user says "check RLUSD balance", use chainId "xrpl", contractAddress "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De", currency "RLUSD".
 If the user says "only if they hold at least 10x the amount they want to spend", create a ratio_to_amount condition with multiple "10" and amount set to the spend size as a string, on the relevant token contract and EVM chainId.
 If the user says "holds at least 0.5% of the token supply", create a ratio_to_supply condition with minFraction "0.005" on the ERC-20 contract and EVM chainId (e.g. the UNI contract, chainId 1).
+If the user says "is this wallet a plain key on Base", create an account_code condition with chainId 8453 and expect "none". "Has it delegated with EIP-7702" is expect "eip7702" (add delegate only when the user names the target contract); "is it a smart-contract wallet" is expect "contract".
 
 Respond with ONLY the JSON object, no explanation.`;
 
@@ -108,7 +111,7 @@ Extract the following as a JSON object:
 - stellarWallet: Stellar address (G-prefixed, 56 chars) if mentioned
 - suiWallet: Sui address (0x + 64 hex chars) if mentioned
 
-The trust profile runs 145 base checks across 27 chains in 9 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names), and up to 166 checks across 29 chains in 13 dimensions with the optional wallets. The EVM wallet is required. Adding solanaWallet, xrplWallet, bitcoinWallet, or tronWallet switches on that chain's own dimension; stellarWallet and suiWallet let the Stellar and Sui rows inside the base dimensions evaluate.
+The trust profile runs 155 base checks across 27 chains in 10 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names, account), and up to 176 checks across 29 chains in 14 dimensions with the optional wallets. The EVM wallet is required. Adding solanaWallet, xrplWallet, bitcoinWallet, or tronWallet switches on that chain's own dimension; stellarWallet and suiWallet let the Stellar and Sui rows inside the base dimensions evaluate.
 
 Respond with ONLY the JSON object, no explanation.`;
 

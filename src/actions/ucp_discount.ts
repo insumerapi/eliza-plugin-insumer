@@ -21,7 +21,7 @@ interface UcpDiscountParams {
 export const ucpDiscountAction: Action = {
   name: "UCP_DISCOUNT",
   description:
-    "Check discount eligibility in Google Universal Commerce Protocol (UCP) format. Returns title-based discounts, allocations, and a signed verification code. Costs 1 merchant credit.",
+    "Check discount eligibility in Google Universal Commerce Protocol (UCP) format. Returns title-based discounts, allocations, and a signed verification code. Costs 1 credit from the API key that owns the store (a 0% result is free).",
   similes: [
     "UCP_CHECK",
     "GOOGLE_DISCOUNT",

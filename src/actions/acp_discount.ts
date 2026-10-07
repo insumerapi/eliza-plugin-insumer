@@ -21,7 +21,7 @@ interface AcpDiscountParams {
 export const acpDiscountAction: Action = {
   name: "ACP_DISCOUNT",
   description:
-    "Check discount eligibility in OpenAI/Stripe Agentic Commerce Protocol (ACP) format. Returns coupon objects, allocations, and a signed verification code. Costs 1 merchant credit.",
+    "Check discount eligibility in OpenAI/Stripe Agentic Commerce Protocol (ACP) format. Returns coupon objects, allocations, and a signed verification code. Costs 1 credit from the API key that owns the store (a 0% result is free).",
   similes: [
     "ACP_CHECK",
     "OPENAI_DISCOUNT",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0 (2026-10-07)
+
+- Adds the `account_code` condition type to VERIFY_WALLET, the tenth type: `{ type: "account_code", chainId: <EVM id>, expect: "none" | "eip7702" | "contract" }` checks the code state of the wallet address itself at the anchored block (a plain key account, the EIP-7702 delegation designator, or any other code). An optional `delegate` with `expect: "eip7702"` is met only when the designator points at that address. The result is the boolean `met`; the code and the delegation target are never returned. EVM chains only; 1 credit; 30-minute expiry; `format: "jwt"` works. The `AttestCondition` type and the extraction prompt carry `expect` and `delegate` with these semantics.
+- Adds the `account` dimension to CHECK_TRUST and CHECK_TRUST_BATCH, already live on `/v1/trust` and `/v1/trust/batch`: two rows per chain, "Contract code on X" and "EIP-7702 delegation on X", on Ethereum, Base, Arbitrum, Optimism and Polygon. Counts move to 155 base checks across 27 chains in 10 dimensions, up to 176 across 29 chains in 14 with the optional Solana, XRPL, Bitcoin and Tron wallets; `conditionSetVersion` is `2026-10-08`. The action description, the extraction template, the package description and the README example outputs (now from a real response) follow.
+- Enhances the CHECK_TRUST reply: dimensions print in the API's fixed order (the base dimensions, then solana, xrpl, bitcoin, tron when switched on), so two profiles read the same way line for line. Covered by a test.
+
 ## 2.3.8 (2026-10-05)
 
 - CONFIGURE_TOKENS no longer sends `ownToken: null` or `partnerTokens: []` unless the user asked for the removal. Before, a request that named only partner tokens could switch the merchant's own token off, and a request that named only the own token could empty the partner list. A key the user did not mention is now left out of the request, and the prompt says so. If nothing is left to send, the action asks what to configure and makes no call.

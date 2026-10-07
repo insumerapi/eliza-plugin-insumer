@@ -51,11 +51,11 @@ The 10 actions cover the complete agent lifecycle — no human required at any s
 
 ```
 BUY_API_KEY          → Provision API key with USDC/USDT/BTC (no auth needed)
-CREATE_MERCHANT      → Create merchant profile (100 free credits)
+CREATE_MERCHANT      → Create merchant profile (codes draw on the owner key's credits)
 CONFIGURE_TOKENS     → Set which tokens gate discounts + tier thresholds
-ADD_CREDITS          → Top up merchant credits with USDC
+ADD_CREDITS          → Add credits to the store owner's key with USDC
 VERIFY_WALLET        → Verify token/NFT/attestation conditions (1-10 per call)
-CHECK_TRUST          → Generate wallet trust profile (145 base checks across 27 chains, up to 166 across 29)
+CHECK_TRUST          → Generate wallet trust profile (155 base checks across 27 chains, up to 176 across 29)
 CHECK_TRUST_BATCH    → Profile up to 10 wallets in one call
 ACP_DISCOUNT         → Check discount in OpenAI/Stripe ACP format
 UCP_DISCOUNT         → Check discount in Google UCP format
@@ -81,7 +81,7 @@ Wallet: 0x...
 
 ### CREATE_MERCHANT
 
-Create a new merchant. The agent's API key owns the merchant. Receives 100 free verification credits.
+Create a new merchant. The agent's API key owns the merchant, and discount codes draw on that key's credits.
 
 ```
 User: "Create a merchant called Acme Coffee with ID acme-coffee in New York."
@@ -90,7 +90,7 @@ Agent: [calls CREATE_MERCHANT → POST /v1/merchants]
 Merchant created successfully!
 ID: acme-coffee
 Name: Acme Coffee
-Credits: 100 (free starter credits)
+Credits: the owner key's balance
 ```
 
 ### CONFIGURE_TOKENS
@@ -124,7 +124,7 @@ Chain: Base
 
 ### VERIFY_WALLET
 
-Verify 1-10 on-chain conditions (token balances, NFT ownership, EAS attestations, Farcaster identity, `evm_view_call` boolean view functions, `ratio_to_amount` for self-scaling agent-spend limits and `ratio_to_supply` for share-of-supply rules (all three EVM only), plus `erc8004_agent` and `erc7710_delegation` agent-standing checks on Base) across 37 chains. Returns ECDSA-signed boolean results.
+Verify 1-10 on-chain conditions (token balances, NFT ownership, EAS attestations, Farcaster identity, `evm_view_call` boolean view functions, `ratio_to_amount` for self-scaling agent-spend limits and `ratio_to_supply` for share-of-supply rules (all three EVM only), `erc8004_agent` and `erc7710_delegation` agent-standing checks on Base, plus `account_code`, the code state of the wallet address itself on any EVM chain) across 37 chains. Returns ECDSA-signed boolean results.
 
 ```
 User: "Check if 0xd8dA... holds at least 100 UNI"
@@ -135,47 +135,58 @@ Attestation ATST-A7C3E1B2D4F56789: PASS
 1 passed, 0 failed
 ```
 
+`account_code` takes `chainId` (an EVM chain) and `expect`: `"none"` (no code, a plain key account), `"eip7702"` (the EIP-7702 delegation designator, a key that has delegated execution to a contract) or `"contract"` (any other code: a smart-contract wallet, a protocol, a token). With `expect: "eip7702"`, an optional `delegate` address is met only when the designator points at it. The result is the boolean `met`; the code and the delegation target are never returned. The request the agent sends for "has vitalik.eth delegated with EIP-7702 on Base":
+
+```json
+{ "wallet": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", "conditions": [{ "type": "account_code", "chainId": 8453, "expect": "eip7702" }] }
+```
+
 ### CHECK_TRUST
 
-Generate a structured wallet trust profile: 145 base checks across 27 chains in 9 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names), up to 166 checks across 29 chains in 13 dimensions with optional Solana, XRPL, Bitcoin, and Tron wallets. Stellar and Sui wallets switch on rows inside the base dimensions. Every check is a presence check; the signed `conditionSetVersion` (currently `2026-10`) names the check list that was run.
+Generate a structured wallet trust profile: 155 base checks across 27 chains in 10 dimensions (stablecoins, governance tokens, NFTs, staking, institutional stablecoins, tokenized treasuries, stablecoin deposits, wrapped bitcoin, names, account), up to 176 checks across 29 chains in 14 dimensions with optional Solana, XRPL, Bitcoin, and Tron wallets. Stellar and Sui wallets switch on rows inside the base dimensions. Every check is a presence check; the signed `conditionSetVersion` (currently `2026-10-08`) names the check list that was run. The `account` dimension has two rows per chain on Ethereum, Base, Arbitrum, Optimism and Polygon: "Contract code on X" and "EIP-7702 delegation on X". A plain key reads false on both; which contract is there is never named.
 
 ```
-User: "What's the trust profile for 0xd8dA...?"
+User: "What's the trust profile for 0x1601...?"
 Agent: [calls CHECK_TRUST → POST /v1/trust]
 
-Trust Profile TRST-B2K4F
-  stablecoins: 15/52 passed
-  governance: 4/8 passed
-  nfts: 1/3 passed
-  staking: 1/5 passed
+Trust Profile TRST-81224
+  stablecoins: 6/52 passed
+  governance: 0/8 passed
+  nfts: 0/3 passed
+  staking: 0/5 passed
   institutional_stablecoins: 0/8 passed, 6 not evaluated
   tokenized_treasuries: 0/16 passed, 1 not evaluated
-  stablecoin_deposits: 3/39 passed
-  wrapped_bitcoin: 1/12 passed
-  names: 1/2 passed
-Overall: 26/145 checks passed
-7 of 145 checks were not evaluated: no wallet was supplied for their chain. Supply solanaWallet, stellarWallet, suiWallet, xrplWallet to run them.
+  stablecoin_deposits: 5/39 passed
+  wrapped_bitcoin: 0/12 passed
+  names: 0/2 passed
+  account: 5/10 passed
+Overall: 16/155 checks passed
+7 of 155 checks were not evaluated: no wallet was supplied for their chain. Supply solanaWallet, stellarWallet, suiWallet, xrplWallet to run them.
 ```
 
-The reply is one line per dimension. The individual checks are in the action result's `data`. A check whose chain needs a wallet that was not supplied is counted as not evaluated, never as failed.
+The reply is one line per dimension, in a fixed order: the base dimensions as listed above, then `solana`, `xrpl`, `bitcoin` and `tron` when their wallet was supplied. The individual checks are in the action result's `data`. A check whose chain needs a wallet that was not supplied is counted as not evaluated, never as failed.
 
 ### CHECK_TRUST_BATCH
 
 Profile up to 10 wallets in a single request. 5-8x faster than sequential calls via shared block fetches.
 
 ```
-User: "Check trust for these wallets: 0xd8dA..., 0xAb58..., 0x1234..."
+User: "Check trust for these wallets: 0x1601... (Solana wallet DXK4...), 0xBBBB..., 0xB561..."
 Agent: [calls CHECK_TRUST_BATCH → POST /v1/trust/batch]
 
 Batch Trust: 3 profiles
-  0xd8dA...: 26/145 checks passed (TRST-B2K4F)
-  0xAb58...: 14/145 checks passed (TRST-C3L5G)
-  0x1234...: 6/145 checks passed (TRST-D4M6H)
+  0x1601...: 17/169 checks passed (TRST-74167)
+  0xBBBB...: 30/155 checks passed (TRST-C7EA2)
+  0xB561...: 5/155 checks passed (TRST-CFD45)
+
+3/3 succeeded
 ```
+
+The first wallet supplied a Solana wallet, so its profile carries the `solana` dimension (14 more checks); the other two ran the 155 base checks.
 
 ### ACP_DISCOUNT
 
-Check discount eligibility in OpenAI/Stripe Agentic Commerce Protocol format. Returns coupon objects, allocations, and a signed verification code. Costs 1 merchant credit.
+Check discount eligibility in OpenAI/Stripe Agentic Commerce Protocol format. Returns coupon objects, allocations, and a signed verification code. Costs 1 credit from the API key that owns the store (a 0% result is free).
 
 ```
 User: "Check ACP discount for 0xd8dA... at merchant acme-coffee."
@@ -188,7 +199,7 @@ Discount: 10%
 
 ### UCP_DISCOUNT
 
-Check discount eligibility in Google Universal Commerce Protocol format. Returns title-based discounts and a signed verification code. Costs 1 merchant credit.
+Check discount eligibility in Google Universal Commerce Protocol format. Returns title-based discounts and a signed verification code. Costs 1 credit from the API key that owns the store (a 0% result is free).
 
 ```
 User: "Check UCP discount for 0xd8dA... at merchant acme-coffee."
