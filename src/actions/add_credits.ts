@@ -21,7 +21,7 @@ interface AddCreditsParams {
 export const addCreditsAction: Action = {
   name: "ADD_CREDITS",
   description:
-    "Buy merchant verification credits with USDC, USDT, or BTC. Send crypto to the platform wallet, then provide the tx hash. USDC/USDT auto-detected on EVM/Solana. BTC on Bitcoin (converted to USD at market rate). Credits are consumed by discount code generation (POST /v1/verify, ACP, UCP). Volume discounts apply.",
+    "Add credits to the API key that owns a store (a store has no balance of its own) with USDC, USDT, or BTC. Send crypto to the platform wallet, then provide the tx hash. USDC/USDT auto-detected on EVM/Solana. BTC on Bitcoin (converted to USD at market rate). Discount codes that carry a discount draw on those credits (POST /v1/verify, ACP, UCP). Flat 25 credits per $1.",
   similes: [
     "BUY_MERCHANT_CREDITS",
     "TOP_UP_CREDITS",

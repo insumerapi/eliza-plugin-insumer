@@ -212,7 +212,7 @@ Well-known contracts:
 
 Respond with ONLY the JSON object, no explanation.`;
 
-export const addCreditsTemplate = `You are extracting merchant credit purchase parameters from the conversation.
+export const addCreditsTemplate = `You are extracting credit purchase parameters (credits for the API key that owns a store) from the conversation.
 
 Recent messages:
 {{recentMessages}}

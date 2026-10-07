@@ -109,7 +109,7 @@ Total tokens: 1/8
 
 ### ADD_CREDITS
 
-Buy merchant verification credits with USDC, USDT, or BTC. Credits are consumed by discount code generation.
+Add credits to the API key that owns a store with USDC, USDT, or BTC (a store has no balance of its own). Discount codes that carry a discount draw on those credits.
 
 ```
 User: "I sent 20 USDC on Base (tx 0xabc123) to top up credits for acme-coffee."
