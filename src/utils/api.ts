@@ -31,11 +31,11 @@ export interface AttestCondition {
   // token_balance threshold is sent as a decimal string (v2 keys require it; v1 keys
   // accept either). A number is coerced to a string before the request is sent.
   threshold?: string | number;
-  // ratio_to_amount: met iff balance >= multiple * amount (RPC EVM chains only).
+  // ratio_to_amount: met iff balance >= multiple * amount (EVM chains only).
   // Sent as decimal strings on v2 keys (numbers are coerced before the request).
   multiple?: string | number;
   amount?: string | number;
-  // ratio_to_supply: met iff balance / totalSupply() >= minFraction, a fraction in (0,1] (RPC EVM + ERC-20 only).
+  // ratio_to_supply: met iff balance / totalSupply() >= minFraction, a fraction in (0,1] (EVM chains, ERC-20 only).
   minFraction?: string | number;
   decimals?: number;
   currency?: string;

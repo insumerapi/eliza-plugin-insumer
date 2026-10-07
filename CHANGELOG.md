@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.2 (2026-10-07)
+
+- CHECK_TRUST_BATCH, the condition type comments and the extraction template state what a caller observes: a batch is faster than sequential calls, and `evm_view_call`, `ratio_to_amount` and `ratio_to_supply` run on EVM chains (`ratio_to_supply` on ERC-20 tokens). No action, input or output changes.
+
 ## 2.4.1 (2026-10-07)
 
 - CHECK_TRUST and CHECK_TRUST_BATCH keep asset rows and account rows apart in their totals: "Overall: 16/155 checks passed (11 assets held, 5 account facts present)" and "17/169 checks passed, 5 account facts". The account facts are counted beside the assets, never added to them.

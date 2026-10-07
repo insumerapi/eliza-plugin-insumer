@@ -168,7 +168,7 @@ The reply is one line per dimension, in a fixed order: the base dimensions as li
 
 ### CHECK_TRUST_BATCH
 
-Profile up to 10 wallets in a single request. 5-8x faster than sequential calls via shared block fetches.
+Profile up to 10 wallets in a single request. Faster than sequential calls.
 
 ```
 User: "Check trust for these wallets: 0x1601... (Solana wallet DXK4...), 0xBBBB..., 0xB561..."

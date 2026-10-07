@@ -14,7 +14,7 @@ import { batchTrustTemplate } from "../utils/templates.js";
 export const checkTrustBatchAction: Action = {
   name: "CHECK_TRUST_BATCH",
   description:
-    "Generate trust profiles for up to 10 wallets in a single request. Shared block fetches make this 5-8x faster than sequential calls. Each wallet gets an independently ECDSA-signed profile. Supports partial success. Costs 3 credits per successful wallet.",
+    "Generate trust profiles for up to 10 wallets in a single request. Faster than sequential calls. Each wallet gets an independently ECDSA-signed profile. Supports partial success. Costs 3 credits per successful wallet.",
   similes: [
     "BATCH_TRUST",
     "BULK_TRUST_CHECK",
