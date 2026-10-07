@@ -266,7 +266,12 @@ export function formatTrustResult(data: Record<string, unknown>): string {
   if (summary) {
     const totalNotEvaluated =
       typeof summary.totalNotEvaluated === "number" ? summary.totalNotEvaluated : notEvaluatedTotal;
-    lines.push(`Overall: ${summary.totalPassed}/${summary.totalChecks} checks passed`);
+    const accountDim = dimensions?.account;
+    const accountPresent = typeof accountDim?.passCount === "number" ? accountDim.passCount : null;
+    const split = accountPresent !== null && typeof summary.totalPassed === "number" && summary.totalPassed >= accountPresent
+      ? ` (${summary.totalPassed - accountPresent} assets held, ${accountPresent} account facts present)`
+      : "";
+    lines.push(`Overall: ${summary.totalPassed}/${summary.totalChecks} checks passed${split}`);
     if (totalNotEvaluated > 0) {
       const how = needed.size > 0 ? ` Supply ${[...needed].sort().join(", ")} to run them.` : "";
       lines.push(
@@ -292,8 +297,11 @@ export function formatBatchResult(data: Record<string, unknown>): string {
     } else {
       const trust = result.trust as Record<string, unknown> | undefined;
       const summary = trust?.summary as Record<string, unknown> | undefined;
+      const dims = trust?.dimensions as Record<string, { passCount?: unknown }> | undefined;
+      const accountPresent = typeof dims?.account?.passCount === "number" ? dims.account.passCount : null;
+      const facts = accountPresent !== null ? `, ${accountPresent} account facts` : "";
       lines.push(
-        `  ${trust?.wallet}: ${summary?.totalPassed ?? "?"}/${summary?.totalChecks ?? "?"} checks passed (${trust?.id})`
+        `  ${trust?.wallet}: ${summary?.totalPassed ?? "?"}/${summary?.totalChecks ?? "?"} checks passed${facts} (${trust?.id})`
       );
     }
   }

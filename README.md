@@ -160,7 +160,7 @@ Trust Profile TRST-81224
   wrapped_bitcoin: 0/12 passed
   names: 0/2 passed
   account: 5/10 passed
-Overall: 16/155 checks passed
+Overall: 16/155 checks passed (11 assets held, 5 account facts present)
 7 of 155 checks were not evaluated: no wallet was supplied for their chain. Supply solanaWallet, stellarWallet, suiWallet, xrplWallet to run them.
 ```
 
@@ -175,9 +175,9 @@ User: "Check trust for these wallets: 0x1601... (Solana wallet DXK4...), 0xBBBB.
 Agent: [calls CHECK_TRUST_BATCH → POST /v1/trust/batch]
 
 Batch Trust: 3 profiles
-  0x1601...: 17/169 checks passed (TRST-74167)
-  0xBBBB...: 30/155 checks passed (TRST-C7EA2)
-  0xB561...: 5/155 checks passed (TRST-CFD45)
+  0x1601...: 17/169 checks passed, 5 account facts (TRST-74167)
+  0xBBBB...: 30/155 checks passed, 2 account facts (TRST-C7EA2)
+  0xB561...: 5/155 checks passed, 0 account facts (TRST-CFD45)
 
 3/3 succeeded
 ```

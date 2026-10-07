@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.1 (2026-10-07)
+
+- CHECK_TRUST and CHECK_TRUST_BATCH keep asset rows and account rows apart in their totals: "Overall: 16/155 checks passed (11 assets held, 5 account facts present)" and "17/169 checks passed, 5 account facts". The account facts are counted beside the assets, never added to them.
+
 ## 2.4.0 (2026-10-07)
 
 - Adds the `account_code` condition type to VERIFY_WALLET, the tenth type: `{ type: "account_code", chainId: <EVM id>, expect: "none" | "eip7702" | "contract" }` checks the code state of the wallet address itself at the anchored block (a plain key account, the EIP-7702 delegation designator, or any other code). An optional `delegate` with `expect: "eip7702"` is met only when the designator points at that address. The result is the boolean `met`; the code and the delegation target are never returned. EVM chains only; 1 credit; 30-minute expiry; `format: "jwt"` works. The `AttestCondition` type and the extraction prompt carry `expect` and `delegate` with these semantics.

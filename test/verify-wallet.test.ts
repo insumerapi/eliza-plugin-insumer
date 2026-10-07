@@ -148,7 +148,7 @@ describe("formatTrustResult", () => {
     expect(result).toContain("institutional_stablecoins: 1/3 passed, 2 not evaluated");
     expect(result).toContain("account: 1/2 passed");
     expect(result).not.toContain("account: 1/2 passed,");
-    expect(result).toContain("Overall: 2/5 checks passed");
+    expect(result).toContain("Overall: 2/5 checks passed (1 assets held, 1 account facts present)");
     expect(result).toContain("2 of 5 checks were not evaluated");
     expect(result).toContain("Supply stellarWallet, suiWallet to run them.");
     expect(result).not.toContain("[-]");
