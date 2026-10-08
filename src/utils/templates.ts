@@ -82,11 +82,11 @@ Sui tokens (use chainId "sui", contractAddress is always a coin type address::mo
   USDC on Sui = contractAddress "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"
 
 Compliance templates (for eas_attestation, no contractAddress needed):
-  "coinbase_verified_account" — KYC on Base
-  "coinbase_verified_country" — country verification on Base
-  "coinbase_one" — Coinbase One membership on Base
-  "gitcoin_passport_score" — Gitcoin Passport score on Optimism
-  "gitcoin_passport_active" — active Gitcoin Passport on Optimism
+  "coinbase_verified_account": KYC on Base
+  "coinbase_verified_country": country verification on Base
+  "coinbase_one": Coinbase One membership on Base
+  "gitcoin_passport_score": Gitcoin Passport score on Optimism
+  "gitcoin_passport_active": active Gitcoin Passport on Optimism
 
 If the user says "check if they hold UNI", create a token_balance condition with the UNI contract, chainId 1, threshold "1". Never add a decimals field.
 If the user says "verify KYC", use template "coinbase_verified_account".
@@ -103,7 +103,7 @@ Recent messages:
 {{recentMessages}}
 
 Extract the following as a JSON object:
-- wallet: EVM address (0x...) — required
+- wallet: EVM address (0x...), required
 - solanaWallet: Solana address (base58) if mentioned
 - xrplWallet: XRPL address (r...) if mentioned
 - bitcoinWallet: Bitcoin address (1..., 3..., bc1q..., or bc1p...) if mentioned
@@ -122,7 +122,7 @@ Recent messages:
 
 Extract the following as a JSON object:
 - wallets: array of wallet objects, each with:
-  - wallet: EVM address (0x...) — required
+  - wallet: EVM address (0x...), required
   - solanaWallet: Solana address (base58) if mentioned for this wallet
   - xrplWallet: XRPL address (r...) if mentioned for this wallet
   - bitcoinWallet: Bitcoin address (1..., 3..., bc1q..., or bc1p...) if mentioned for this wallet

@@ -19,7 +19,7 @@ interface CreateMerchantParams {
 export const createMerchantAction: Action = {
   name: "CREATE_MERCHANT",
   description:
-    "Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Discount codes draw on the credits of the API key that owns it. Max 10 merchants per API key.",
+    "Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Discount codes draw on the credits of the API key that owns it. A limited number of merchants per API key; past it the API answers 429.",
   similes: [
     "NEW_MERCHANT",
     "SETUP_MERCHANT",

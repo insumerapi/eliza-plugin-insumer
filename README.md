@@ -2,7 +2,7 @@
 
 ElizaOS plugin for [InsumerAPI](https://insumermodel.com): 10 actions for condition-based access across 37 blockchains.
 
-An agent can go from zero to running a condition-based commerce operation with no human involvement: provision an API key with USDC, create a merchant, configure which tokens gate access, add credits, verify wallets, run ACP/UCP commerce flows, and confirm payments — all autonomously.
+An agent can go from zero to running a condition-based commerce operation with no human involvement: provision an API key with USDC, create a merchant, configure which tokens gate access, add credits, verify wallets, run ACP/UCP commerce flows, and confirm payments, all autonomously.
 
 ## Install
 
@@ -14,9 +14,9 @@ Works with `@elizaos/core` 1.7 and later, and with 2.x. On a 2.0 pre-release (al
 
 ## Configure
 
-### 1. Get a key — no signup, no dashboard, no password
+### 1. Get a key: no signup, no dashboard, no password
 
-Two paths. Both return an `insr_live_...` key instantly with 100 reads/day and 10 verification credits. One free key per email.
+Two paths. Both return an `insr_live_...` key instantly with 10 free verifications plus 100 requests a day. One free key per email.
 
 ```bash
 curl -s -X POST https://api.insumermodel.com/v1/keys/create \
@@ -24,7 +24,7 @@ curl -s -X POST https://api.insumermodel.com/v1/keys/create \
   -d '{"email": "you@example.com", "appName": "ElizaOS Agent", "tier": "free"}' | jq .
 ```
 
-Or enter your email on [insumermodel.com](https://insumermodel.com/?utm_source=npm-insumermodel-plugin-eliza) — the key appears inline. Already have a key? Manage it at [insumermodel.com/developers/account/](https://insumermodel.com/developers/account/?utm_source=npm-insumermodel-plugin-eliza).
+Or enter your email on [insumermodel.com](https://insumermodel.com/?utm_source=npm-insumermodel-plugin-eliza) and the key appears inline. Already have a key? Manage it at [insumermodel.com/developers/account/](https://insumermodel.com/developers/account/?utm_source=npm-insumermodel-plugin-eliza).
 
 ### 2. Add to your character file
 
@@ -47,7 +47,7 @@ export INSUMER_API_KEY=insr_live_your_key_here
 
 ## Full Autonomous Flow
 
-The 10 actions cover the complete agent lifecycle — no human required at any step:
+The 10 actions cover the complete agent lifecycle, with no human required at any step:
 
 ```
 BUY_API_KEY          → Provision API key with USDC/USDT/BTC (no auth needed)
@@ -66,18 +66,20 @@ CONFIRM_PAYMENT      → Confirm on-chain USDC payment for discount code
 
 ### BUY_API_KEY
 
-Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required — the sender wallet from the transaction becomes the key's identity. One key per wallet.
+Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required: the sender wallet from the transaction becomes the key's identity. One key per wallet.
 
 ```
-User: "I sent 10 USDC on Base, tx 0xabc123. Create an API key called TrustBot."
+User: "I sent 10 USDC on Solana, tx 5Kx... Create an API key called TrustBot."
 Agent: [calls BUY_API_KEY → POST /v1/keys/buy]
 
 API key created successfully!
 Key: insr_live_...
 Name: TrustBot
 Credits: 250
-Wallet: 0x...
+Wallet: <the paying Solana wallet>
 ```
+
+On an EVM chain the paying wallet receives the Insumer Access pass by default and no key string is issued (the key is returned if the pass is deferred): the reply says which, and that wallet signs requests with an `Authorization: Wallet` header.
 
 ### CREATE_MERCHANT
 
@@ -242,11 +244,11 @@ VERIFY_WALLET, CHECK_TRUST, and CHECK_TRUST_BATCH return the full API envelope i
 }
 ```
 
-`sig` is an ECDSA P-256 signature (base64, P1363 r||s) and `kid` selects the signed preimage (`insumer-attest-v2` signs the domain-tagged canonical JSON; `insumer-attest-v1` signs bare insertion-order JSON). Since 2026-09-01 every attest and trust response also carries an ML-DSA-65 post-quantum companion, `pqSig` and `pqKid` (trust profiles use `insumer-trust-pq1`), added beside `sig` and `kid` without changing them. The JWKS at `https://insumermodel.com/.well-known/jwks.json` holds five entries over two keys: the EC key under three kids, then the post-quantum key under two RFC 9964 `AKP` entries. Match by `kid` or `pqKid`, never by position. `npm install insumer-verify` (1.8.1+) verifies the envelope and reports five verdicts: signature, condition hash, freshness, expiry, and the post-quantum companion. The `insumer-verify` package runs every check; it is on npm for Node and on PyPI for Python under the same name.
+`sig` is an ECDSA P-256 signature (base64, P1363 r||s) and `kid` selects the signed preimage (`insumer-attest-v2` signs the domain-tagged canonical JSON; `insumer-attest-v1` signs bare insertion-order JSON). Every attest and trust response also carries an ML-DSA-65 post-quantum companion, `pqSig` and `pqKid` (trust profiles use `insumer-trust-pq1`), added beside `sig` and `kid` without changing them. The JWKS at `https://insumermodel.com/.well-known/jwks.json` holds five entries over two keys: the EC key under three kids, then the post-quantum key under two RFC 9964 `AKP` entries. Match by `kid` or `pqKid`, never by position. `npm install insumer-verify` (1.8.1+) verifies the envelope and reports five verdicts: signature, condition hash, freshness, expiry, and the post-quantum companion. The `insumer-verify` package runs every check; it is on npm for Node and on PyPI for Python under the same name.
 
 ## Provider: WALLET_CREDENTIALS
 
-Automatically detects wallet addresses (EVM, Solana, XRPL, Bitcoin, Tron, Stellar, Sui) in conversation and signals that verification actions are available. Dynamic — only activates when wallet patterns are found.
+Automatically detects wallet addresses (EVM, Solana, XRPL, Bitcoin, Tron, Stellar, Sui) in conversation and signals that verification actions are available. Dynamic: only activates when wallet patterns are found.
 
 ## Handling `rpc_failure` Errors
 
@@ -264,7 +266,7 @@ CHECK_TRUST_BATCH is the exception: one wallet that could not be read does not f
 
 ## Pricing
 
-**Tiers:** Free (100 reads/day, 10 credits) | Pro $29/mo (1,000 credits/mo, 10,000/day) | Enterprise $99/mo (5,000 credits/mo, 100,000/day)
+**Tiers:** Free (10 free verifications plus 100 requests a day) | Pro $29/mo (1,000 credits/mo, 10,000/day) | Enterprise $99/mo (5,000 credits/mo, 100,000/day)
 
 **Volume discounts:** $5–$99 = $0.04/call (25 credits/$1) · $100–$499 = $0.03 (33/$1, 25% off) · $500+ = $0.02 (50/$1, 50% off)
 
@@ -272,13 +274,14 @@ CHECK_TRUST_BATCH is the exception: one wallet that could not be read does not f
 - **EVM (USDC/USDT):** `0xAd982CB19aCCa2923Df8F687C0614a7700255a23`
 - **Solana (USDC/USDT):** `6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr`
 - **Bitcoin:** `bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0`
+- **Tron (USDT-TRC20):** `TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn`
 
 **Supported payment chains:** Ethereum, Base, Polygon, Arbitrum, Optimism, BNB Chain, Avalanche, Solana, Bitcoin, Tron (USDT-TRC20). Tokens sent on unsupported chains cannot be recovered. All purchases are final and non-refundable. [Full pricing →](https://insumermodel.com/pricing/)
 
 ## Also Available As
 
-- **Claude Code Skill:** `smithery skill add douglasborthwick/insumer-skill` ([Smithery](https://smithery.ai/skills/douglasborthwick/insumer-skill) · [GitHub](https://github.com/insumerapi/insumer-skill)) — for *writing* wallet auth into your own projects from inside Claude Code
-- **MCP Server:** `npx -y mcp-server-insumer` ([npm](https://www.npmjs.com/package/mcp-server-insumer)) — for runtime agent access to the API
+- **Claude Code Skill:** `smithery skill add douglasborthwick/insumer-skill` ([Smithery](https://smithery.ai/skills/douglasborthwick/insumer-skill) · [GitHub](https://github.com/insumerapi/insumer-skill)), for *writing* wallet auth into your own projects from inside Claude Code
+- **MCP Server:** `npx -y mcp-server-insumer` ([npm](https://www.npmjs.com/package/mcp-server-insumer)), for runtime agent access to the API
 - **LangChain:** `pip install langchain-insumer` ([PyPI](https://pypi.org/project/langchain-insumer/))
 - **OpenAI GPT:** [InsumerAPI Wallet Auth](https://chatgpt.com/g/g-699c5e43ce2481918b3f1e7f144c8a49-insumerapi-wallet-auth) (GPT Store)
 

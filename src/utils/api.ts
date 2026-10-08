@@ -293,7 +293,7 @@ export function formatBatchResult(data: Record<string, unknown>): string {
   for (const result of results) {
     if (result.error) {
       const err = result.error as Record<string, unknown>;
-      lines.push(`  ${err.wallet}: ERROR — ${err.message}`);
+      lines.push(`  ${err.wallet}: ERROR: ${err.message}`);
     } else {
       const trust = result.trust as Record<string, unknown> | undefined;
       const summary = trust?.summary as Record<string, unknown> | undefined;

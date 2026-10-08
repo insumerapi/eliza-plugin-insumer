@@ -20,7 +20,7 @@ interface BuyKeyParams {
 export const buyKeyAction: Action = {
   name: "BUY_API_KEY",
   description:
-    "Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required. Send crypto to the platform wallet, then provide the transaction hash. The sender wallet becomes the key's identity. One key per wallet. USDC/USDT auto-detected on EVM/Solana. BTC on Bitcoin (converted to USD at market rate).",
+    "Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required. Send crypto to the platform wallet, then provide the transaction hash. The sender wallet becomes the key's identity. One key per wallet. USDC/USDT auto-detected on EVM/Solana. USDT-TRC20 on Tron. BTC on Bitcoin (converted to USD at market rate).",
   similes: [
     "PURCHASE_API_KEY",
     "GET_API_KEY",
@@ -47,7 +47,7 @@ export const buyKeyAction: Action = {
   ],
 
   validate: async (_runtime: IAgentRuntime, _message: Memory): Promise<boolean> => {
-    // No API key required — this is the endpoint that creates one
+    // No API key required: this is the endpoint that creates one
     return true;
   },
 
@@ -112,16 +112,28 @@ export const buyKeyAction: Action = {
     }
 
     const data = result.data as Record<string, unknown>;
+    // The key string is omitted when the paying EVM wallet receives the
+    // Insumer Access pass on this purchase (the API's default); that wallet
+    // then authenticates with an Authorization: Wallet header.
+    const hasKey = typeof data.key === "string" && data.key.length > 0;
     const text = [
-      `API key created successfully!`,
+      hasKey ? `API key created successfully!` : `Purchase confirmed: this wallet is the credential.`,
       ``,
-      `Key: ${data.key}`,
+      ...(hasKey ? [`Key: ${data.key}`] : []),
       `Name: ${data.name}`,
       `Credits: ${data.creditsAdded}`,
       `Wallet: ${data.registeredWallet}`,
       ``,
-      `Store this key securely — it is only shown once.`,
-      `Use it as your INSUMER_API_KEY to access all verification endpoints.`,
+      ...(hasKey
+        ? [
+            `Store this key securely: it is only shown once.`,
+            `Use it as your INSUMER_API_KEY to access all verification endpoints.`,
+          ]
+        : [
+            typeof data.authHint === "string" && data.authHint
+              ? data.authHint
+              : `No key string was issued: the wallet holds the Insumer Access pass and signs requests with an Authorization: Wallet header.`,
+          ]),
     ].join("\n");
 
     if (callback) {

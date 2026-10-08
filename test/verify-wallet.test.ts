@@ -291,7 +291,7 @@ describe("formatBatchResult", () => {
     const result = formatBatchResult(data);
     expect(result).toContain("Batch Trust: 2 profiles");
     expect(result).toContain("0x111: 3/5 checks passed (TRST-AAA)");
-    expect(result).toContain("0x222: ERROR — Invalid address");
+    expect(result).toContain("0x222: ERROR: Invalid address");
     expect(result).toContain("1/2 succeeded");
   });
 });
