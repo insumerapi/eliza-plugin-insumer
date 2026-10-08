@@ -244,7 +244,7 @@ VERIFY_WALLET, CHECK_TRUST, and CHECK_TRUST_BATCH return the full API envelope i
 }
 ```
 
-`sig` is an ECDSA P-256 signature (base64, P1363 r||s) and `kid` selects the signed preimage (`insumer-attest-v2` signs the domain-tagged canonical JSON; `insumer-attest-v1` signs bare insertion-order JSON). Every attest and trust response also carries an ML-DSA-65 post-quantum companion, `pqSig` and `pqKid` (trust profiles use `insumer-trust-pq1`), added beside `sig` and `kid` without changing them. The JWKS at `https://insumermodel.com/.well-known/jwks.json` holds five entries over two keys: the EC key under three kids, then the post-quantum key under two RFC 9964 `AKP` entries. Match by `kid` or `pqKid`, never by position. `npm install insumer-verify` (1.8.1+) verifies the envelope and reports five verdicts: signature, condition hash, freshness, expiry, and the post-quantum companion. The `insumer-verify` package runs every check; it is on npm for Node and on PyPI for Python under the same name.
+`sig` is an ECDSA P-256 signature (base64, P1363 r||s) and `kid` selects the signed preimage (`insumer-attest-v2` signs the domain-tagged canonical JSON; `insumer-attest-v1` signs bare insertion-order JSON). Every attest and trust response is signed twice: ES256 and a post-quantum ML-DSA-65 signature, `pqSig` and `pqKid` (trust profiles use `insumer-trust-pq1`), carried beside `sig` and `kid` without changing them. The JWKS at `https://insumermodel.com/.well-known/jwks.json` holds five entries over two keys: the EC key under three kids, then the post-quantum key under two RFC 9964 `AKP` entries. Match by `kid` or `pqKid`, never by position. `npm install insumer-verify` (1.8.1+) verifies the envelope and reports five verdicts: signature, condition hash, freshness, expiry, and the post-quantum signature. The `insumer-verify` package runs every check; it is on npm for Node and on PyPI for Python under the same name.
 
 ## Provider: WALLET_CREDENTIALS
 
@@ -284,6 +284,12 @@ CHECK_TRUST_BATCH is the exception: one wallet that could not be read does not f
 - **MCP Server:** `npx -y mcp-server-insumer` ([npm](https://www.npmjs.com/package/mcp-server-insumer)), for runtime agent access to the API
 - **LangChain:** `pip install langchain-insumer` ([PyPI](https://pypi.org/project/langchain-insumer/))
 - **OpenAI GPT:** [InsumerAPI Wallet Auth](https://chatgpt.com/g/g-699c5e43ce2481918b3f1e7f144c8a49-insumerapi-wallet-auth) (GPT Store)
+
+## Other ways to reach the same API
+
+**Hosted MCP.** `https://api.insumermodel.com/mcp` speaks MCP streamable HTTP. Connect by URL from ChatGPT, claude.ai or any hosted agent: no install, no key. It serves ten tools on a shared daily allowance: `insumer_attest`, `insumer_wallet_trust`, `insumer_batch_wallet_trust`, `insumer_compliance_templates`, `insumer_jwks`, `insumer_list_merchants`, `insumer_get_merchant`, `insumer_list_tokens`, `insumer_check_discount` and `insumer_validate_code`. It does not issue ACP/UCP discounts or set up merchants. For all 27 tools on your own key, run `npx -y mcp-server-insumer`.
+
+**x402 pay-per-call.** An agent that holds a wallet can pay per call instead of holding a key. `POST /v1/attest`, `/v1/trust` and `/v1/trust/batch` accept x402: call with no credential headers, receive `402` with a quote (`x402Version` 2), pay in USDC on Base, Polygon, Arbitrum, Solana or Arc, and retry with the `PAYMENT-SIGNATURE` header. Prices: attest $0.05 ($0.10 with a Merkle proof), trust $0.15 per wallet ($0.30), trust/batch $0.15 per wallet ($0.30). The discount endpoints (`/v1/verify`, `/v1/acp/discount`, `/v1/ucp/discount`) do not take x402. x402 moves the money. InsumerAPI checks the conditions. The payer is charged only for a successful answer, and the payer sees the answer only after the payment settled.
 
 ## Links
 
