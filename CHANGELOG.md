@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.4 (2026-10-19)
+
+- BUY_API_KEY, ADD_CREDITS and the README state InsumerAPI's receiving address per token: USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche goes to `0xee432065474D2C852700f74e3fD81e2Bcc16a3D4` and USDC on Solana to `8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4`; USDT, and anything on BNB Chain, keep the earlier addresses. Bitcoin and Tron are unchanged. No action name, input or output changes.
+
 ## 2.4.3 (2026-10-07)
 
 - The README states the free tier as 10 free verifications plus 100 requests a day and lists the Tron (USDT-TRC20) platform wallet; BUY_API_KEY and ADD_CREDITS name USDT-TRC20 on Tron, ADD_CREDITS states its flat 25 credits per $1 at every purchase size, and CREATE_MERCHANT says a key manages a limited number of merchants (past it the API answers 429). The batch trust reply marks a failed wallet as `wallet: ERROR: message`. BUY_API_KEY reports an EVM purchase whose wallet receives the Insumer Access pass (the API's default, which issues no key string) as the wallet being the credential, with the API's sign-in guidance, rather than printing an empty key line. House punctuation and present-tense wording throughout.

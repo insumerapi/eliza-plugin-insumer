@@ -150,9 +150,11 @@ Chain IDs for payments:
   Optimism = 10, BNB Chain = 56, Avalanche = 43114, Solana = "solana",
   Bitcoin = "bitcoin", Tron = "tron"
 
-Platform wallets:
-  EVM: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
-  Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
+Platform wallets (the address depends on the token):
+  USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
+  USDT on any EVM chain, and USDC or USDT on BNB Chain: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
+  USDC on Solana: 8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4
+  USDT on Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
   Bitcoin: bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0
   Tron: TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn
 
@@ -229,9 +231,11 @@ Chain IDs for payments:
   Optimism = 10, BNB Chain = 56, Avalanche = 43114, Solana = "solana",
   Bitcoin = "bitcoin", Tron = "tron"
 
-Platform wallets:
-  EVM: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
-  Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
+Platform wallets (the address depends on the token):
+  USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
+  USDT on any EVM chain, and USDC or USDT on BNB Chain: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
+  USDC on Solana: 8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4
+  USDT on Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
   Bitcoin: bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0
   Tron: TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn
 
