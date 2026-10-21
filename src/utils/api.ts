@@ -138,6 +138,65 @@ export function errorData(result: ApiResponse): Record<string, unknown> {
   return out;
 }
 
+// --- Sender signature (key and credit purchases) ---
+
+/**
+ * The text the paying wallet must sign, taken from the API's answer when a purchase needs a
+ * senderSignature that is missing (400) or does not match the sending wallet (403). null for
+ * any other answer. The API builds the text: five lines joined by "\n", no trailing newline,
+ * for example
+ *
+ *   api.insumermodel.com
+ *   Confirm the wallet that sent this payment.
+ *   Purpose: key purchase
+ *   Chain: eip155:8453
+ *   Transaction: 0x...
+ *
+ * It is returned exactly as the API sent it, because the signature covers those exact bytes.
+ */
+export function senderProofText(result: ApiResponse): string | null {
+  const msg = result.error?.message;
+  if (typeof msg !== "string" || !msg.startsWith("senderSignature")) return null;
+  const start = msg.indexOf("api.insumermodel.com\n");
+  if (start < 0) return null;
+  return msg.slice(start);
+}
+
+/**
+ * The reply when a purchase needs the paying wallet's signature: the exact text to sign and
+ * how to send the signature back. `mismatch` is true when a signature was sent and did not match.
+ */
+export function senderProofReply(text: string, mismatch: boolean): string {
+  return [
+    mismatch
+      ? "That signature does not match the wallet that sent this payment. Sign this exact text with the wallet that sent it:"
+      : "To finish the purchase, the wallet that sent the payment signs this exact text:",
+    "",
+    "```",
+    text,
+    "```",
+    "",
+    "Sign the five lines exactly as shown, with no trailing newline. On an EVM chain use personal_sign (EIP-191; smart-contract wallets are checked with ERC-1271). On Solana use the wallet's signMessage. Then send me the signature (0x hex on EVM, base58 or base64 on Solana) with the same transaction hash. The payment is not used until the signature matches.",
+  ].join("\n");
+}
+
+/**
+ * The request body for a key or credit purchase: only the fields the API takes, and
+ * senderSignature only when a non-empty string was given.
+ */
+export function purchaseBody(params: Record<string, unknown>, fields: string[]): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  for (const f of fields) {
+    const v = params[f];
+    if (v === undefined || v === null || v === "") continue;
+    body[f] = v;
+  }
+  if (typeof params.senderSignature === "string" && params.senderSignature.trim()) {
+    body.senderSignature = params.senderSignature.trim();
+  }
+  return body;
+}
+
 // --- Response formatters ---
 
 interface AttestResult {

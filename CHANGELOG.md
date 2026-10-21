@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0 (2026-10-21)
+
+- Key and credit purchases are paid in USDC only, on Ethereum (1), Optimism (10), BNB Chain (56), Polygon (137), Base (8453), Arbitrum (42161), Avalanche (43114) or Solana (`"solana"`). BUY_API_KEY and ADD_CREDITS no longer offer Bitcoin, Tron or USDT; the API refuses them with a 400 that lists the accepted chains, and the action relays it. Bitcoin and Tron stay chains the API reads: VERIFY_WALLET, CHECK_TRUST and CHECK_TRUST_BATCH are unchanged.
+- The receiving addresses take USDC only: `0xee432065474D2C852700f74e3fD81e2Bcc16a3D4` on every accepted EVM chain except BNB Chain; `0xAd982CB19aCCa2923Df8F687C0614a7700255a23` on BNB Chain, and on the other EVM chains during the changeover; `8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4` on Solana, with `6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr` during the changeover. There is no Bitcoin or Tron receiving address.
+- `amount` is required on both actions; without it the action asks for it and makes no call. ADD_CREDITS reports `USDC paid`; the BTC reply line is gone, as are `btcPaid`, `btcPrice` and `usdEquivalent` in the API's answer.
+- New `senderSignature`: the wallet that sent the payment signs a five-line text the API builds, naming the purpose, the chain and the transaction. BUY_API_KEY always needs it; ADD_CREDITS needs it when the key has no registered wallet yet or `updateWallet` moves the key to a new wallet. When the API answers that the signature is missing (400) or does not match (403), the action shows the exact text to sign and how to sign it (EIP-191 `personal_sign` on EVM, ERC-1271 for smart-contract wallets; `signMessage` on Solana), and returns it as `data.textToSign`. The extraction prompts pick up a signature the user gives and the action sends it only when present.
+
 ## 2.4.4 (2026-10-19)
 
 - BUY_API_KEY, ADD_CREDITS and the README state InsumerAPI's receiving address per token: USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche goes to `0xee432065474D2C852700f74e3fD81e2Bcc16a3D4` and USDC on Solana to `8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4`; USDT, and anything on BNB Chain, keep the earlier addresses. Bitcoin and Tron are unchanged. No action name, input or output changes.

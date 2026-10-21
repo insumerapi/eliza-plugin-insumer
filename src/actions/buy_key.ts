@@ -7,20 +7,22 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { publicApiCall, errorData } from "../utils/api.js";
+import { publicApiCall, errorData, senderProofText, senderProofReply, purchaseBody } from "../utils/api.js";
 import { buyKeyTemplate } from "../utils/templates.js";
 
 interface BuyKeyParams {
   txHash: string;
-  chainId: number | "solana" | "bitcoin" | "tron";
-  amount?: number;
+  chainId: number | "solana";
+  amount: number;
   appName: string;
+  // The paying wallet's signature over the text the API names (always required on /v1/keys/buy).
+  senderSignature?: string;
 }
 
 export const buyKeyAction: Action = {
   name: "BUY_API_KEY",
   description:
-    "Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required. Send crypto to the platform wallet, then provide the transaction hash. The sender wallet becomes the key's identity. One key per wallet. USDC/USDT auto-detected on EVM/Solana. USDT-TRC20 on Tron. BTC on Bitcoin (converted to USD at market rate).",
+    "Buy a new InsumerAPI key with USDC. No existing API key required. Send USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana to the platform wallet, then provide the transaction hash and the amount. The wallet that sent the payment signs a short text the API names (senderSignature), so a transaction hash alone cannot claim the key. The sender wallet becomes the key's identity. One key per wallet.",
   similes: [
     "PURCHASE_API_KEY",
     "GET_API_KEY",
@@ -33,7 +35,7 @@ export const buyKeyAction: Action = {
       {
         name: "user",
         content: {
-          text: "I sent 10 USDC on Base, tx hash 0xabc123. Get me an API key for my agent called 'TrustBot'. (Also accepts USDT or BTC)",
+          text: "I sent 10 USDC on Base, tx hash 0xabc123. Get me an API key for my agent called 'TrustBot'.",
         },
       } as ActionExample,
       {
@@ -81,7 +83,7 @@ export const buyKeyAction: Action = {
     } catch {
       if (callback) {
         await callback({
-          text: "I couldn't extract the purchase parameters. Please provide: transaction hash, chain (e.g. Base, Ethereum, Solana, Bitcoin), amount (for stablecoins), and a name for your key.",
+          text: "I couldn't extract the purchase parameters. Please provide: transaction hash, chain (Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana), USDC amount, and a name for your key.",
         });
       }
       return { success: false, text: "Failed to parse purchase parameters" };
@@ -93,6 +95,12 @@ export const buyKeyAction: Action = {
       }
       return { success: false, text: "No transaction hash provided" };
     }
+    if (params.amount === undefined || params.amount === null || (params.amount as unknown) === "") {
+      if (callback) {
+        await callback({ text: "Please provide the USDC amount you sent (minimum 5)." });
+      }
+      return { success: false, text: "No amount provided" };
+    }
     if (!params.appName) {
       if (callback) {
         await callback({ text: "Please provide a name for your API key." });
@@ -101,10 +109,24 @@ export const buyKeyAction: Action = {
     }
 
     // Call InsumerAPI (public endpoint, no auth needed)
-    const result = await publicApiCall("POST", "/keys/buy", params as unknown as Record<string, unknown>);
+    const body = purchaseBody(params as unknown as Record<string, unknown>, ["txHash", "chainId", "amount", "appName"]);
+    const result = await publicApiCall("POST", "/keys/buy", body);
 
     if (!result.ok) {
       const errMsg = result.error?.message || "Unknown API error";
+      // The API names the exact text the paying wallet must sign: relay it as is.
+      const toSign = senderProofText(result);
+      if (toSign) {
+        const text = senderProofReply(toSign, result.error?.code === 403);
+        if (callback) {
+          await callback({ text });
+        }
+        return {
+          success: false,
+          text,
+          data: { ...errorData(result), textToSign: toSign } as ActionResult["data"],
+        };
+      }
       if (callback) {
         await callback({ text: `Key purchase failed: ${errMsg}` });
       }

@@ -140,23 +140,22 @@ Recent messages:
 {{recentMessages}}
 
 Extract the following as a JSON object:
-- txHash: the USDC/USDT/BTC transaction hash
-- chainId: chain where crypto was sent (number, "solana", "bitcoin", or "tron")
-- amount: amount sent (number, minimum 5 USD equivalent)
+- txHash: the USDC transaction hash
+- chainId: chain where the USDC was sent (number, or "solana")
+- amount: USDC amount sent (number, required, minimum 5)
 - appName: name for the API key
+- senderSignature: the signature the paying wallet made over the InsumerAPI confirmation text ("api.insumermodel.com / Confirm the wallet that sent this payment. / ..."), only if the user has given one: 0x followed by hex on an EVM chain, base58 or base64 on Solana. Never put the transaction hash or the text itself here. Leave the key out if no signature was given.
 
-Chain IDs for payments:
-  Ethereum = 1, Base = 8453, Polygon = 137, Arbitrum = 42161,
-  Optimism = 10, BNB Chain = 56, Avalanche = 43114, Solana = "solana",
-  Bitcoin = "bitcoin", Tron = "tron"
+Purchases are paid in USDC only. Chain IDs for payments:
+  Ethereum = 1, Optimism = 10, BNB Chain = 56, Polygon = 137,
+  Base = 8453, Arbitrum = 42161, Avalanche = 43114, Solana = "solana"
+Bitcoin, Tron and USDT are not accepted for purchases. If the user paid that way, still copy the chain they named; the API answers with the accepted list.
 
-Platform wallets (the address depends on the token):
-  USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
-  USDT on any EVM chain, and USDC or USDT on BNB Chain: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
+Platform wallets (USDC only):
+  USDC on Ethereum, Optimism, Polygon, Base, Arbitrum or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
+  USDC on BNB Chain (and on the other EVM chains during the changeover): 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
   USDC on Solana: 8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4
-  USDT on Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
-  Bitcoin: bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0
-  Tron: TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn
+  USDC on Solana during the changeover: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
 
 Respond with ONLY the JSON object, no explanation.`;
 
@@ -221,23 +220,23 @@ Recent messages:
 
 Extract the following as a JSON object:
 - merchantId: the merchant ID to add credits to (required)
-- txHash: the USDC/USDT/BTC transaction hash (required)
-- chainId: chain where crypto was sent (number, "solana", "bitcoin", or "tron")
-- amount: amount sent (number, minimum 5 USD equivalent)
+- txHash: the USDC transaction hash (required)
+- chainId: chain where the USDC was sent (number, or "solana")
+- amount: USDC amount sent (number, required, minimum 5)
 - updateWallet: true only if the user explicitly wants to change their registered wallet (default false)
+- senderSignature: the signature the paying wallet made over the InsumerAPI confirmation text ("api.insumermodel.com / Confirm the wallet that sent this payment. / ..."), only if the user has given one: 0x followed by hex on an EVM chain, base58 or base64 on Solana. Never put the transaction hash or the text itself here. Leave the key out if no signature was given.
+  A signature is needed only when the API key has no registered wallet yet, or updateWallet moves it to a new wallet.
 
-Chain IDs for payments:
-  Ethereum = 1, Base = 8453, Polygon = 137, Arbitrum = 42161,
-  Optimism = 10, BNB Chain = 56, Avalanche = 43114, Solana = "solana",
-  Bitcoin = "bitcoin", Tron = "tron"
+Purchases are paid in USDC only. Chain IDs for payments:
+  Ethereum = 1, Optimism = 10, BNB Chain = 56, Polygon = 137,
+  Base = 8453, Arbitrum = 42161, Avalanche = 43114, Solana = "solana"
+Bitcoin, Tron and USDT are not accepted for purchases. If the user paid that way, still copy the chain they named; the API answers with the accepted list.
 
-Platform wallets (the address depends on the token):
-  USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
-  USDT on any EVM chain, and USDC or USDT on BNB Chain: 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
+Platform wallets (USDC only):
+  USDC on Ethereum, Optimism, Polygon, Base, Arbitrum or Avalanche: 0xee432065474D2C852700f74e3fD81e2Bcc16a3D4
+  USDC on BNB Chain (and on the other EVM chains during the changeover): 0xAd982CB19aCCa2923Df8F687C0614a7700255a23
   USDC on Solana: 8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4
-  USDT on Solana: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
-  Bitcoin: bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0
-  Tron: TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn
+  USDC on Solana during the changeover: 6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr
 
 Respond with ONLY the JSON object, no explanation.`;
 

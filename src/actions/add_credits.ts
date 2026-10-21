@@ -7,21 +7,24 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
-import { apiCall, errorData } from "../utils/api.js";
+import { apiCall, errorData, senderProofText, senderProofReply, purchaseBody } from "../utils/api.js";
 import { addCreditsTemplate } from "../utils/templates.js";
 
 interface AddCreditsParams {
   merchantId: string;
   txHash: string;
-  chainId: number | "solana" | "bitcoin" | "tron";
-  amount?: number;
+  chainId: number | "solana";
+  amount: number;
   updateWallet?: boolean;
+  // The paying wallet's signature over the text the API names. Needed only when the key has no
+  // registered wallet yet, or updateWallet moves it to a different sender.
+  senderSignature?: string;
 }
 
 export const addCreditsAction: Action = {
   name: "ADD_CREDITS",
   description:
-    "Add credits to the API key that owns a store (a store has no balance of its own) with USDC, USDT, or BTC. Send crypto to the platform wallet, then provide the tx hash. USDC/USDT auto-detected on EVM/Solana. USDT-TRC20 on Tron. BTC on Bitcoin (converted to USD at market rate). Discount codes that carry a discount draw on those credits (POST /v1/verify, ACP, UCP). Flat 25 credits per $1 ($0.04/credit) at every purchase size.",
+    "Add credits to the API key that owns a store (a store has no balance of its own) with USDC. Send USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana to the platform wallet, then provide the tx hash and the amount. When the key has no registered wallet yet, or updateWallet moves it to a new wallet, the wallet that sent the payment signs a short text the API names (senderSignature). Discount codes that carry a discount draw on those credits (POST /v1/verify, ACP, UCP). Flat 25 credits per $1 ($0.04/credit) at every purchase size.",
   similes: [
     "BUY_MERCHANT_CREDITS",
     "TOP_UP_CREDITS",
@@ -80,7 +83,7 @@ export const addCreditsAction: Action = {
     } catch {
       if (callback) {
         await callback({
-          text: "I couldn't extract the credit purchase details. Please provide: merchant ID, transaction hash, chain, and amount (for stablecoins).",
+          text: "I couldn't extract the credit purchase details. Please provide: merchant ID, transaction hash, chain (Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana), and the USDC amount.",
         });
       }
       return { success: false, text: "Failed to parse credit purchase parameters" };
@@ -93,11 +96,33 @@ export const addCreditsAction: Action = {
       return { success: false, text: "Missing merchant ID or tx hash" };
     }
 
-    const { merchantId, ...body } = params;
-    const result = await apiCall(apiKey, "POST", `/merchants/${merchantId}/credits`, body as unknown as Record<string, unknown>);
+    if (params.amount === undefined || params.amount === null || (params.amount as unknown) === "") {
+      if (callback) {
+        await callback({ text: "Please provide the USDC amount you sent (minimum 5)." });
+      }
+      return { success: false, text: "No amount provided" };
+    }
+
+    const { merchantId } = params;
+    const body = purchaseBody(params as unknown as Record<string, unknown>, ["txHash", "chainId", "amount"]);
+    if (params.updateWallet === true) body.updateWallet = true;
+    const result = await apiCall(apiKey, "POST", `/merchants/${merchantId}/credits`, body);
 
     if (!result.ok) {
       const errMsg = result.error?.message || "Unknown API error";
+      // The API names the exact text the paying wallet must sign: relay it as is.
+      const toSign = senderProofText(result);
+      if (toSign) {
+        const text = senderProofReply(toSign, result.error?.code === 403);
+        if (callback) {
+          await callback({ text });
+        }
+        return {
+          success: false,
+          text,
+          data: { ...errorData(result), textToSign: toSign } as ActionResult["data"],
+        };
+      }
       if (callback) {
         await callback({ text: `Credit purchase failed: ${errMsg}` });
       }
@@ -105,16 +130,12 @@ export const addCreditsAction: Action = {
     }
 
     const data = result.data as Record<string, unknown>;
-    const isBtc = data.btcPaid !== undefined;
-    const paymentLine = isBtc
-      ? `BTC paid: ${data.btcPaid} (≈$${data.usdEquivalent} at $${data.btcPrice})`
-      : `USDC paid: ${data.usdcPaid}`;
     const text = [
       `Credits added to ${merchantId}!`,
       ``,
       `Credits added: ${data.creditsAdded}`,
       `Total credits: ${data.totalCredits}`,
-      paymentLine,
+      `USDC paid: ${data.usdcPaid}`,
       `Chain: ${data.chainName}`,
     ].join("\n");
 

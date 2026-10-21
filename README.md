@@ -52,7 +52,7 @@ export INSUMER_API_KEY=insr_live_your_key_here
 The 10 actions cover the complete agent lifecycle, with no human required at any step:
 
 ```
-BUY_API_KEY          → Provision API key with USDC/USDT/BTC (no auth needed)
+BUY_API_KEY          → Provision API key with USDC (no auth needed)
 CREATE_MERCHANT      → Create merchant profile (codes draw on the owner key's credits)
 CONFIGURE_TOKENS     → Set which tokens gate discounts + tier thresholds
 ADD_CREDITS          → Add credits to the store owner's key with USDC
@@ -68,7 +68,7 @@ CONFIRM_PAYMENT      → Confirm on-chain USDC payment for discount code
 
 ### BUY_API_KEY
 
-Buy a new InsumerAPI key with USDC, USDT, or BTC. No existing API key required: the sender wallet from the transaction becomes the key's identity. One key per wallet.
+Buy a new InsumerAPI key with USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana. No existing API key required: the sender wallet from the transaction becomes the key's identity. One key per wallet. The USDC amount is required.
 
 ```
 User: "I sent 10 USDC on Solana, tx 5Kx... Create an API key called TrustBot."
@@ -80,6 +80,18 @@ Name: TrustBot
 Credits: 250
 Wallet: <the paying Solana wallet>
 ```
+
+The wallet that sent the payment also signs a short text naming the payment (`senderSignature`), because a transaction hash is public and proves nothing about who is asking. The first call without a signature gets the exact text back from the API, and the action shows it:
+
+```
+api.insumermodel.com
+Confirm the wallet that sent this payment.
+Purpose: key purchase
+Chain: eip155:8453
+Transaction: 0x...
+```
+
+Sign those five lines exactly (no trailing newline) with the paying wallet: `personal_sign` (EIP-191) on an EVM chain, where smart-contract wallets are checked with ERC-1271, or `signMessage` on Solana. Then send the signature with the same transaction hash, and the action passes it as `senderSignature`. A signature that does not match the sending wallet gets the text again; the payment is not used until it matches. The action result's `data.textToSign` carries the text for a caller that signs programmatically.
 
 On an EVM chain the paying wallet receives the Insumer Access pass by default and no key string is issued (the key is returned if the pass is deferred): the reply says which, and that wallet signs requests with an `Authorization: Wallet` header.
 
@@ -113,7 +125,7 @@ Total tokens: 1/8
 
 ### ADD_CREDITS
 
-Add credits to the API key that owns a store with USDC, USDT, or BTC (a store has no balance of its own). Discount codes that carry a discount draw on those credits.
+Add credits to the API key that owns a store with USDC (a store has no balance of its own). Discount codes that carry a discount draw on those credits. The USDC amount is required. When the key has no registered wallet yet, or `updateWallet` moves it to a new wallet, the paying wallet signs the text the API names (its third line reads `Purpose: credit purchase`), as for BUY_API_KEY. A payment from the wallet already registered to the key needs no signature.
 
 ```
 User: "I sent 20 USDC on Base (tx 0xabc123) to top up credits for acme-coffee."
@@ -272,15 +284,13 @@ CHECK_TRUST_BATCH is the exception: one wallet that could not be read does not f
 
 **Volume discounts:** $5–$99 = $0.04/call (25 credits/$1) · $100–$499 = $0.03 (33/$1, 25% off) · $500+ = $0.02 (50/$1, 50% off)
 
-**Platform wallets** (the address depends on the token):
-- **USDC on Ethereum, Base, Polygon, Arbitrum, Optimism or Avalanche:** `0xee432065474D2C852700f74e3fD81e2Bcc16a3D4`
-- **USDT on any EVM chain, and USDC or USDT on BNB Chain:** `0xAd982CB19aCCa2923Df8F687C0614a7700255a23`
+**Platform wallets** (key and credit purchases are paid in USDC only):
+- **USDC on Ethereum, Optimism, Polygon, Base, Arbitrum or Avalanche:** `0xee432065474D2C852700f74e3fD81e2Bcc16a3D4`
+- **USDC on BNB Chain** (and on the other EVM chains during the changeover): `0xAd982CB19aCCa2923Df8F687C0614a7700255a23`
 - **USDC on Solana:** `8fyEGM5tRjMocKQWaVXyM2XvvnTxR3sWdrYtug2zeLX4`
-- **USDT on Solana:** `6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr`
-- **Bitcoin:** `bc1qg7qnerdhlmdn899zemtez5tcx2a2snc0dt9dt0`
-- **Tron (USDT-TRC20):** `TC5yvwkAMakkXtUxYiu2Yn1xbBcwYuD6cn`
+- **USDC on Solana during the changeover:** `6a1mLjefhvSJX1sEX8PTnionbE9DqoYjU6F6bNkT4Ydr`
 
-**Supported payment chains:** Ethereum, Base, Polygon, Arbitrum, Optimism, BNB Chain, Avalanche, Solana, Bitcoin, Tron (USDT-TRC20). Tokens sent on unsupported chains cannot be recovered. All purchases are final and non-refundable. [Full pricing →](https://insumermodel.com/pricing/)
+**Supported payment chains:** USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche and Solana. Bitcoin, Tron and USDT are not accepted for purchases (Bitcoin and Tron stay chains the API reads). Tokens sent on unsupported chains, or tokens other than USDC, cannot be recovered. All purchases are final and non-refundable. [Full pricing →](https://insumermodel.com/pricing/)
 
 ## Also Available As
 
