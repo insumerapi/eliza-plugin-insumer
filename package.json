@@ -1,6 +1,6 @@
 {
   "name": "@insumermodel/plugin-eliza",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "ElizaOS plugin for InsumerAPI: condition-based access for autonomous agents. 10 actions: buy API key, create merchant, configure conditions, add credits, verify wallets, trust profiles (155 base checks across 27 chains in 10 dimensions, up to 176 across 29 chains in 14 with optional Solana, XRPL, Bitcoin and Tron wallets; Stellar and Sui wallets switch on rows inside the base dimensions), ACP/UCP commerce, confirm payments. ECDSA-signed results across 37 blockchains.",
   "type": "module",
   "main": "dist/index.js",
@@ -55,6 +55,18 @@
       "INSUMER_API_KEY": {
         "type": "string",
         "description": "InsumerAPI key (starts with insr_live_). Get one free at https://insumermodel.com/developers/"
+      },
+      "INSUMER_ADMIN_ENTITY_IDS": {
+        "type": "string",
+        "description": "Comma-separated ElizaOS entity ids allowed to run CREATE_MERCHANT, CONFIGURE_TOKENS and ADD_CREDITS. With none set (and server roles off), nobody can run them."
+      },
+      "INSUMER_ADMIN_ALLOW_SERVER_ROLES": {
+        "type": "string",
+        "description": "\"true\" also lets an OWNER or ADMIN of the message's world run the merchant admin actions. Off by default."
+      },
+      "INSUMER_UPDATE_WALLET": {
+        "type": "string",
+        "description": "\"true\" makes ADD_CREDITS move the key's registered wallet to the paying wallet. Never taken from chat."
       }
     }
   }

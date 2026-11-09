@@ -7,6 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
+import { isAuthorizedAdmin, requesterContext, NOT_AUTHORIZED_TEXT } from "../utils/auth.js";
 import { apiCall, errorData } from "../utils/api.js";
 import { createMerchantTemplate } from "../utils/templates.js";
 
@@ -19,7 +20,7 @@ interface CreateMerchantParams {
 export const createMerchantAction: Action = {
   name: "CREATE_MERCHANT",
   description:
-    "Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Discount codes draw on the credits of the API key that owns it. A limited number of merchants per API key; past it the API answers 429.",
+    "Operator only. Create a new merchant on InsumerAPI. The agent's API key becomes the merchant owner. Discount codes draw on the credits of the API key that owns it. A limited number of merchants per API key; past it the API answers 429.",
   similes: [
     "NEW_MERCHANT",
     "SETUP_MERCHANT",
@@ -45,27 +46,33 @@ export const createMerchantAction: Action = {
     ],
   ],
 
-  validate: async (runtime: IAgentRuntime, _message: Memory): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY");
-    return typeof apiKey === "string" && apiKey.startsWith("insr_live_");
+    if (typeof apiKey !== "string" || !apiKey.startsWith("insr_live_")) return false;
+    // Merchant admin: only a sender the operator named (see utils/auth.ts).
+    return isAuthorizedAdmin(runtime, message);
   },
 
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state?: State,
+    _state?: State,
     _options?: Record<string, unknown>,
     callback?: HandlerCallback
   ) => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY") as string;
 
-    if (!state) {
-      state = await runtime.composeState(message, []);
+    if (!(await isAuthorizedAdmin(runtime, message))) {
+      if (callback) {
+        await callback({ text: NOT_AUTHORIZED_TEXT });
+      }
+      return { success: false, text: NOT_AUTHORIZED_TEXT };
     }
 
+    // Parameters come from the requester's own messages, never from others in the room.
     const prompt = createMerchantTemplate.replace(
       "{{recentMessages}}",
-      state.text || message.content.text || ""
+      await requesterContext(runtime, message)
     );
 
     const extracted = await runtime.useModel("TEXT_SMALL" as never, {

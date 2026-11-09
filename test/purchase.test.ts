@@ -31,15 +31,21 @@ function missing(text: string): ApiResponse {
   };
 }
 
+// The sender is on the operator's allowlist, so the merchant-admin actions run.
 function runtimeReturning(params: Record<string, unknown>) {
+  const settings: Record<string, string> = {
+    INSUMER_API_KEY: "insr_live_test",
+    INSUMER_ADMIN_ENTITY_IDS: "operator-1",
+  };
   return {
-    getSetting: (k: string) => (k === "INSUMER_API_KEY" ? "insr_live_test" : undefined),
+    agentId: "agent-1",
+    getSetting: (k: string) => settings[k],
     composeState: async () => ({ text: "" }),
     useModel: async () => JSON.stringify(params),
   } as never;
 }
 
-const message = { content: { text: "" } } as never;
+const message = { entityId: "operator-1", content: { text: "" } } as never;
 
 describe("senderProofText", () => {
   it("returns the exact text from a missing-signature 400", () => {
@@ -153,7 +159,7 @@ describe("ADD_CREDITS", () => {
     vi.unstubAllGlobals();
   });
 
-  it("reports USDC paid and sends updateWallet only when true", async () => {
+  it("reports USDC paid and never sends updateWallet taken from chat", async () => {
     fetchMock.mockResolvedValue({
       json: async () => ({ ok: true, data: { creditsAdded: 500, totalCredits: 600, usdcPaid: "20", chainName: "Base" } }),
     });

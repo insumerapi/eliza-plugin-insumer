@@ -7,6 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
+import { isAuthorizedAdmin, requesterContext, NOT_AUTHORIZED_TEXT, merchantPath, isValidMerchantId } from "../utils/auth.js";
 import { apiCall, errorData } from "../utils/api.js";
 import { configureTokensTemplate } from "../utils/templates.js";
 
@@ -59,7 +60,7 @@ export function buildTokensBody(params: ConfigureTokensParams): Record<string, u
 export const configureTokensAction: Action = {
   name: "CONFIGURE_TOKENS",
   description:
-    "Configure which tokens gate access to merchant discounts and set tier thresholds. Supports own token + up to 7 partner tokens with 1-4 discount tiers each (whole-number discounts from 1 to 50). EVM chains + Solana + XRPL supported. Only the tokens the user names are sent: an own token that is not mentioned is left as stored, and a partner list, when given, replaces the stored partner list.",
+    "Operator only. Configure which tokens gate access to merchant discounts and set tier thresholds. Supports own token + up to 7 partner tokens with 1-4 discount tiers each (whole-number discounts from 1 to 50). EVM chains + Solana + XRPL supported. Only the tokens the user names are sent: an own token that is not mentioned is left as stored, and a partner list, when given, replaces the stored partner list.",
   similes: [
     "SET_TOKEN_TIERS",
     "CONFIGURE_TOKEN_GATING",
@@ -85,27 +86,33 @@ export const configureTokensAction: Action = {
     ],
   ],
 
-  validate: async (runtime: IAgentRuntime, _message: Memory): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY");
-    return typeof apiKey === "string" && apiKey.startsWith("insr_live_");
+    if (typeof apiKey !== "string" || !apiKey.startsWith("insr_live_")) return false;
+    // Merchant admin: only a sender the operator named (see utils/auth.ts).
+    return isAuthorizedAdmin(runtime, message);
   },
 
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state?: State,
+    _state?: State,
     _options?: Record<string, unknown>,
     callback?: HandlerCallback
   ) => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY") as string;
 
-    if (!state) {
-      state = await runtime.composeState(message, []);
+    if (!(await isAuthorizedAdmin(runtime, message))) {
+      if (callback) {
+        await callback({ text: NOT_AUTHORIZED_TEXT });
+      }
+      return { success: false, text: NOT_AUTHORIZED_TEXT };
     }
 
+    // Parameters come from the requester's own messages, never from others in the room.
     const prompt = configureTokensTemplate.replace(
       "{{recentMessages}}",
-      state.text || message.content.text || ""
+      await requesterContext(runtime, message)
     );
 
     const extracted = await runtime.useModel("TEXT_SMALL" as never, {
@@ -133,6 +140,13 @@ export const configureTokensAction: Action = {
     }
 
     const merchantId = params.merchantId;
+    if (!isValidMerchantId(merchantId)) {
+      const text = "That merchant ID is not valid: use 2 to 50 letters, digits, dashes or underscores. Nothing was changed.";
+      if (callback) {
+        await callback({ text });
+      }
+      return { success: false, text: "Invalid merchant ID" };
+    }
     const body = buildTokensBody(params);
     if (Object.keys(body).length === 0) {
       if (callback) {
@@ -142,7 +156,7 @@ export const configureTokensAction: Action = {
       }
       return { success: false, text: "No token configuration provided" };
     }
-    const result = await apiCall(apiKey, "PUT", `/merchants/${merchantId}/tokens`, body);
+    const result = await apiCall(apiKey, "PUT", merchantPath(merchantId, "tokens"), body);
 
     if (!result.ok) {
       const errMsg = result.error?.message || "Unknown API error";

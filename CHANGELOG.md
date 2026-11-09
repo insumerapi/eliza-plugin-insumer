@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.6.0 (2026-11-09)
+
+Behavior change: the merchant admin actions now need a sender the operator names. Set `INSUMER_ADMIN_ENTITY_IDS` before upgrading if your agent runs them.
+
+- CREATE_MERCHANT, CONFIGURE_TOKENS and ADD_CREDITS act on the operator's API key, and until now anyone who could post where the agent reads could trigger them. They now run only when the sender's ElizaOS entity id is in `INSUMER_ADMIN_ENTITY_IDS` (comma-separated), or, when the operator sets `INSUMER_ADMIN_ALLOW_SERVER_ROLES` to `"true"`, when the sender holds the OWNER or ADMIN role in the message's world. With neither set, nobody can run them: `validate()` returns false and the handler refuses without calling the API. The agent's own messages never count. Read-only and customer-facing actions (VERIFY_WALLET, CHECK_TRUST, CHECK_TRUST_BATCH, ACP_DISCOUNT, UCP_DISCOUNT, CONFIRM_PAYMENT, BUY_API_KEY) are unchanged.
+- Those three actions extract their details from the requesting sender's own recent messages in the room, not from the whole conversation, so another participant's text cannot steer what is sent.
+- A merchant ID must match `^[A-Za-z0-9_-]{2,50}$` (the API's own rule) before ADD_CREDITS or CONFIGURE_TOKENS sends anything, and it is URL-encoded into the path, so an ID can no longer point the request at another route.
+- ADD_CREDITS no longer takes `updateWallet` from chat; the extraction prompt no longer asks for it. It is sent only when the operator sets `INSUMER_UPDATE_WALLET` to `"true"`.
+- New regression tests cover all of the above.
+
 ## 2.5.0 (2026-10-21)
 
 - Key and credit purchases are paid in USDC only, on Ethereum (1), Optimism (10), BNB Chain (56), Polygon (137), Base (8453), Arbitrum (42161), Avalanche (43114) or Solana (`"solana"`). BUY_API_KEY and ADD_CREDITS no longer offer Bitcoin, Tron or USDT; the API refuses them with a 400 that lists the accepted chains, and the action relays it. Bitcoin and Tron stay chains the API reads: VERIFY_WALLET, CHECK_TRUST and CHECK_TRUST_BATCH are unchanged.

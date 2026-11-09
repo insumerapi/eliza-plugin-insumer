@@ -223,9 +223,8 @@ Extract the following as a JSON object:
 - txHash: the USDC transaction hash (required)
 - chainId: chain where the USDC was sent (number, or "solana")
 - amount: USDC amount sent (number, required, minimum 5)
-- updateWallet: true only if the user explicitly wants to change their registered wallet (default false)
 - senderSignature: the signature the paying wallet made over the InsumerAPI confirmation text ("api.insumermodel.com / Confirm the wallet that sent this payment. / ..."), only if the user has given one: 0x followed by hex on an EVM chain, base58 or base64 on Solana. Never put the transaction hash or the text itself here. Leave the key out if no signature was given.
-  A signature is needed only when the API key has no registered wallet yet, or updateWallet moves it to a new wallet.
+  A signature is needed only when the API key has no registered wallet yet, or the operator has set the key to move to a new wallet.
 
 Purchases are paid in USDC only. Chain IDs for payments:
   Ethereum = 1, Optimism = 10, BNB Chain = 56, Polygon = 137,

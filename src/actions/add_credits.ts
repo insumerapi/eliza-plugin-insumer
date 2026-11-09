@@ -7,6 +7,7 @@ import type {
   State,
   HandlerCallback,
 } from "@elizaos/core";
+import { isAuthorizedAdmin, requesterContext, NOT_AUTHORIZED_TEXT, merchantPath, isValidMerchantId, settingEnabled } from "../utils/auth.js";
 import { apiCall, errorData, senderProofText, senderProofReply, purchaseBody } from "../utils/api.js";
 import { addCreditsTemplate } from "../utils/templates.js";
 
@@ -15,16 +16,16 @@ interface AddCreditsParams {
   txHash: string;
   chainId: number | "solana";
   amount: number;
-  updateWallet?: boolean;
   // The paying wallet's signature over the text the API names. Needed only when the key has no
-  // registered wallet yet, or updateWallet moves it to a different sender.
+  // registered wallet yet, or the operator's INSUMER_UPDATE_WALLET setting moves it to a
+  // different sender.
   senderSignature?: string;
 }
 
 export const addCreditsAction: Action = {
   name: "ADD_CREDITS",
   description:
-    "Add credits to the API key that owns a store (a store has no balance of its own) with USDC. Send USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana to the platform wallet, then provide the tx hash and the amount. When the key has no registered wallet yet, or updateWallet moves it to a new wallet, the wallet that sent the payment signs a short text the API names (senderSignature). Discount codes that carry a discount draw on those credits (POST /v1/verify, ACP, UCP). Flat 25 credits per $1 ($0.04/credit) at every purchase size.",
+    "Operator only. Add credits to the API key that owns a store (a store has no balance of its own) with USDC. Send USDC on Ethereum, Optimism, BNB Chain, Polygon, Base, Arbitrum, Avalanche or Solana to the platform wallet, then provide the tx hash and the amount. When the key has no registered wallet yet, or the operator's INSUMER_UPDATE_WALLET setting moves it to a new wallet, the wallet that sent the payment signs a short text the API names (senderSignature). Discount codes that carry a discount draw on those credits (POST /v1/verify, ACP, UCP). Flat 25 credits per $1 ($0.04/credit) at every purchase size.",
   similes: [
     "BUY_MERCHANT_CREDITS",
     "TOP_UP_CREDITS",
@@ -49,27 +50,33 @@ export const addCreditsAction: Action = {
     ],
   ],
 
-  validate: async (runtime: IAgentRuntime, _message: Memory): Promise<boolean> => {
+  validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY");
-    return typeof apiKey === "string" && apiKey.startsWith("insr_live_");
+    if (typeof apiKey !== "string" || !apiKey.startsWith("insr_live_")) return false;
+    // Merchant admin: only a sender the operator named (see utils/auth.ts).
+    return isAuthorizedAdmin(runtime, message);
   },
 
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state?: State,
+    _state?: State,
     _options?: Record<string, unknown>,
     callback?: HandlerCallback
   ) => {
     const apiKey = runtime.getSetting("INSUMER_API_KEY") as string;
 
-    if (!state) {
-      state = await runtime.composeState(message, []);
+    if (!(await isAuthorizedAdmin(runtime, message))) {
+      if (callback) {
+        await callback({ text: NOT_AUTHORIZED_TEXT });
+      }
+      return { success: false, text: NOT_AUTHORIZED_TEXT };
     }
 
+    // Parameters come from the requester's own messages, never from others in the room.
     const prompt = addCreditsTemplate.replace(
       "{{recentMessages}}",
-      state.text || message.content.text || ""
+      await requesterContext(runtime, message)
     );
 
     const extracted = await runtime.useModel("TEXT_SMALL" as never, {
@@ -104,9 +111,18 @@ export const addCreditsAction: Action = {
     }
 
     const { merchantId } = params;
+    if (!isValidMerchantId(merchantId)) {
+      const text = "That merchant ID is not valid: use 2 to 50 letters, digits, dashes or underscores. Nothing was sent.";
+      if (callback) {
+        await callback({ text });
+      }
+      return { success: false, text: "Invalid merchant ID" };
+    }
     const body = purchaseBody(params as unknown as Record<string, unknown>, ["txHash", "chainId", "amount"]);
-    if (params.updateWallet === true) body.updateWallet = true;
-    const result = await apiCall(apiKey, "POST", `/merchants/${merchantId}/credits`, body);
+    // updateWallet is never taken from chat. Only the operator turns it on, with the
+    // INSUMER_UPDATE_WALLET setting, to move the key's registered wallet to the paying wallet.
+    if (settingEnabled(runtime, "INSUMER_UPDATE_WALLET")) body.updateWallet = true;
+    const result = await apiCall(apiKey, "POST", merchantPath(merchantId, "credits"), body);
 
     if (!result.ok) {
       const errMsg = result.error?.message || "Unknown API error";

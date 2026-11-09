@@ -47,15 +47,38 @@ Or set the environment variable:
 export INSUMER_API_KEY=insr_live_your_key_here
 ```
 
+### 3. Name who can run the merchant admin actions
+
+CREATE_MERCHANT, CONFIGURE_TOKENS and ADD_CREDITS act on your API key: they create stores, change which tokens earn discounts (paid from your credits) and add credits. Since 2.6.0 they run only for a sender you name. With nothing set, nobody can run them, and the agent does not offer them. The other actions (verify, trust, ACP/UCP discounts, payment confirmation, buying a key) stay open to anyone the agent talks to.
+
+```json
+{
+  "settings": {
+    "secrets": {
+      "INSUMER_API_KEY": "insr_live_your_key_here",
+      "INSUMER_ADMIN_ENTITY_IDS": "<your ElizaOS entity id>,<another>"
+    }
+  }
+}
+```
+
+| Setting | What it does |
+|---|---|
+| `INSUMER_ADMIN_ENTITY_IDS` | Comma-separated ElizaOS entity ids allowed to run the merchant admin actions. This is the id ElizaOS gives the sender of a message (`message.entityId`), not a Discord or Telegram user name. |
+| `INSUMER_ADMIN_ALLOW_SERVER_ROLES` | `"true"` also lets an entity with the OWNER or ADMIN role in the message's world run them. Off by default, because whoever owns a server the agent joins holds that role there. Turn it on only if the agent stays in servers you control. |
+| `INSUMER_UPDATE_WALLET` | `"true"` makes ADD_CREDITS send `updateWallet: true`, which moves the key's registered wallet to the wallet that paid. Chat can never set this. Turn it on for the one top-up that moves the wallet, then off again. |
+
+The admin actions also read their details only from the requesting sender's own recent messages in the room, never from what other people there wrote, and a merchant ID must be 2 to 50 letters, digits, dashes or underscores before any request is sent.
+
 ## Full Autonomous Flow
 
-The 10 actions cover the complete agent lifecycle, with no human required at any step:
+The 10 actions cover the complete agent lifecycle, with no human required at any step (the merchant admin actions run for the senders you name, see above):
 
 ```
 BUY_API_KEY          → Provision API key with USDC (no auth needed)
-CREATE_MERCHANT      → Create merchant profile (codes draw on the owner key's credits)
-CONFIGURE_TOKENS     → Set which tokens gate discounts + tier thresholds
-ADD_CREDITS          → Add credits to the store owner's key with USDC
+CREATE_MERCHANT      → Create merchant profile (operator only) (codes draw on the owner key's credits)
+CONFIGURE_TOKENS     → Set which tokens gate discounts + tier thresholds (operator only)
+ADD_CREDITS          → Add credits to the store owner's key with USDC (operator only)
 VERIFY_WALLET        → Verify token/NFT/attestation conditions (1-10 per call)
 CHECK_TRUST          → Generate wallet trust profile (155 base checks across 27 chains, up to 176 across 29)
 CHECK_TRUST_BATCH    → Profile up to 10 wallets in one call
@@ -97,7 +120,7 @@ On an EVM chain the paying wallet receives the Insumer Access pass by default an
 
 ### CREATE_MERCHANT
 
-Create a new merchant. The agent's API key owns the merchant, and discount codes draw on that key's credits.
+Operator only (see `INSUMER_ADMIN_ENTITY_IDS`). Create a new merchant. The agent's API key owns the merchant, and discount codes draw on that key's credits.
 
 ```
 User: "Create a merchant called Acme Coffee with ID acme-coffee in New York."
@@ -111,7 +134,7 @@ Credits: the owner key's balance
 
 ### CONFIGURE_TOKENS
 
-Configure which tokens gate access to merchant discounts. Up to 8 tokens with 1-4 discount tiers each. Supports EVM chains (Ethereum, Base, Polygon, Arbitrum, Optimism, and more) plus Solana and XRPL.
+Operator only (see `INSUMER_ADMIN_ENTITY_IDS`). Configure which tokens gate access to merchant discounts. Up to 8 tokens with 1-4 discount tiers each. Supports EVM chains (Ethereum, Base, Polygon, Arbitrum, Optimism, and more) plus Solana and XRPL.
 
 Only the tokens you name are sent. An own token you do not mention is left as stored. A partner list, when you give one, replaces the stored partner list, so name every partner token you want to keep. The own token is switched off, or the partner list emptied, only when you ask for that in so many words. Tier discounts are whole numbers from 1 to 50. An XRPL currency code is sent exactly as you wrote it: codes are case-sensitive.
 
@@ -125,7 +148,7 @@ Total tokens: 1/8
 
 ### ADD_CREDITS
 
-Add credits to the API key that owns a store with USDC (a store has no balance of its own). Discount codes that carry a discount draw on those credits. The USDC amount is required. When the key has no registered wallet yet, or `updateWallet` moves it to a new wallet, the paying wallet signs the text the API names (its third line reads `Purpose: credit purchase`), as for BUY_API_KEY. A payment from the wallet already registered to the key needs no signature.
+Operator only (see `INSUMER_ADMIN_ENTITY_IDS`). Add credits to the API key that owns a store with USDC (a store has no balance of its own). Discount codes that carry a discount draw on those credits. The USDC amount is required. `updateWallet` is never taken from chat: it is sent only when you set `INSUMER_UPDATE_WALLET`. When the key has no registered wallet yet, or `INSUMER_UPDATE_WALLET` moves it to a new wallet, the paying wallet signs the text the API names (its third line reads `Purpose: credit purchase`), as for BUY_API_KEY. A payment from the wallet already registered to the key needs no signature.
 
 ```
 User: "I sent 20 USDC on Base (tx 0xabc123) to top up credits for acme-coffee."
