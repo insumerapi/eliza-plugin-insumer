@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1 (2026-11-11)
+
+- Shorter npm description: the old one ran past npm's 255-character limit and was cut off mid-word. Adds the `wallet-auth` and `insumerapi` keywords. Package metadata only: no code changes.
+
 ## 2.6.0 (2026-11-09)
 
 Behavior change: the merchant admin actions now need a sender the operator names. Set `INSUMER_ADMIN_ENTITY_IDS` before upgrading if your agent runs them.
