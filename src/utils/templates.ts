@@ -14,7 +14,7 @@ Extract the following as a JSON object:
 - format: "jwt" if the user asks for a JWT token, bearer token, Wallet Auth token, or JWT format. Omit otherwise.
 - conditions: array of conditions to check, each with:
   - type: "token_balance", "nft_ownership", "eas_attestation", "farcaster_id", "evm_view_call", "ratio_to_amount", "ratio_to_supply", "erc8004_agent", "erc7710_delegation", or "account_code"
-  - contractAddress: token/NFT contract address (use the reference table below). "native" means the chain's native coin and is for token_balance and ratio_to_amount only. nft_ownership needs the NFT contract address (0x + 40 hex on EVM); "native" with nft_ownership is rejected with a 400. On Sui, use a coin type address::module::Name ("0x2::sui::SUI" for native SUI); "native" is not accepted on Sui.
+  - contractAddress: token/NFT contract address (use the reference table below). "native" means the chain's native coin and is for token_balance and ratio_to_amount only. Tempo (chainId 4217) has no native coin, so never use "native" there: use the token's contract address. nft_ownership needs the NFT contract address (0x + 40 hex on EVM); "native" with nft_ownership is rejected with a 400. On Sui, use a coin type address::module::Name ("0x2::sui::SUI" for native SUI); "native" is not accepted on Sui.
   - chainId: chain ID number or "solana", "xrpl", "bitcoin", "tron", "stellar", or "sui" (ratio_to_amount and ratio_to_supply support EVM chain IDs only)
   - threshold: minimum balance for token_balance, as a decimal STRING in token units (e.g. "1000", not 1000) to preserve full precision
   - multiple: collateralization multiple as a decimal STRING (for ratio_to_amount; met iff balance >= multiple * amount), e.g. "10"
@@ -39,11 +39,11 @@ Chain ID reference (37 supported chains):
   Polygon = 137, Arbitrum = 42161, Optimism = 10, Chiliz = 88888,
   Soneium = 1868, Plume = 98866, World Chain = 480,
   Sonic = 146, Gnosis = 100, Mantle = 5000, Scroll = 534352,
-  Linea = 59144, zkSync Era = 324, Blast = 81457, Taiko = 167000,
+  Linea = 59144, zkSync Era = 324, Taiko = 167000,
   Ronin = 2020, Celo = 42220,
   Viction = 88, opBNB = 204, Unichain = 130, Ink = 57073,
   Sei = 1329, Berachain = 80094, ApeChain = 33139, XDC = 50,
-  Robinhood Chain = 4663, Arc = 5042,
+  Robinhood Chain = 4663, Arc = 5042, Tempo = 4217,
   Solana = "solana", XRPL = "xrpl", Bitcoin = "bitcoin",
   Tron = "tron", Stellar = "stellar", Sui = "sui"
 
@@ -199,11 +199,11 @@ Onboarding chain IDs (all 31 EVM chains + Solana + XRPL; Bitcoin, Tron, Stellar 
   Polygon = 137, Arbitrum = 42161, Optimism = 10, Chiliz = 88888,
   Soneium = 1868, Plume = 98866, World Chain = 480,
   Sonic = 146, Gnosis = 100, Mantle = 5000, Scroll = 534352,
-  Linea = 59144, zkSync Era = 324, Blast = 81457, Celo = 42220,
+  Linea = 59144, zkSync Era = 324, Celo = 42220,
   opBNB = 204, Unichain = 130, Ink = 57073,
   Sei = 1329, Berachain = 80094, ApeChain = 33139, XDC = 50,
   Robinhood Chain = 4663, Taiko = 167000, Ronin = 2020, Viction = 88,
-  Arc = 5042,
+  Arc = 5042, Tempo = 4217,
   Solana = "solana", XRPL = "xrpl"
 
 Well-known contracts:

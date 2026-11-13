@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.2 (2026-11-13)
+
+- The chain ID reference the actions give the model lists Tempo (4217) and no longer lists Blast (81457), which has shut down. Tempo has no native coin, so a condition there names the token's contract address. The counts are unchanged: 37 chains, 31 of them EVM. No action, input or output changes.
+
 ## 2.6.1 (2026-11-11)
 
 - Shorter npm description: the old one ran past npm's 255-character limit and was cut off mid-word. Adds the `wallet-auth` and `insumerapi` keywords. Package metadata only: no code changes.
